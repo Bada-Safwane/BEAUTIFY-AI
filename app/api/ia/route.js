@@ -5,7 +5,8 @@ export async function POST(request) {
   try {
     const formData = await request.formData();
     const file = formData.get('file');
-    const prompt = formData.get('prompt') || 'Update this picture adding him a hat';
+    const prompt = formData.get('prompt') || 'Enhance the uploaded photo while keeping the person’s identity completely unchanged. Make only subtle, natural improvements: gently brighten the face, improve lighting and clarity, smooth small imperfections without removing unique features, slightly enhance skin tone, whiten teeth very lightly if appropriate, and make the expression look a bit happier by softening facial tension and improving the overall mood of the image. Do NOT alter facial structure, hairstyle, body shape, age, or any defining physical traits. The result should look like the same real person on their best day—natural, authentic, and not edited in an obvious or unrealistic way.';
+
 
     if (!file) {
       return Response.json(
