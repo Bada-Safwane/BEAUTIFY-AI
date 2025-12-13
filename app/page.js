@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Upload, Sparkles, Image as ImageIcon, X, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -14,6 +14,37 @@ export default function Home() {
   const [generatedImageUrl, setGeneratedImageUrl] = useState(null);
   const [email, setEmail] = useState('');
   const [showDownload, setShowDownload] = useState(false);
+  const [processingText, setProcessingText] = useState('Processing...');
+  const [showPricingPopup, setShowPricingPopup] = useState(false);
+  const [showEmailPopup, setShowEmailPopup] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState(null);
+  const [currentPage, setCurrentPage] = useState('home');
+
+  // Processing animation effect
+  useEffect(() => {
+    if (!isLoading) return;
+
+    const baseText = 'Processing...';
+    let currentLength = baseText.length;
+    let direction = -1; // -1 for removing, 1 for adding
+
+    const interval = setInterval(() => {
+      if (direction === -1) {
+        currentLength--;
+        if (currentLength <= 1) {
+          direction = 1;
+        }
+      } else {
+        currentLength++;
+        if (currentLength >= baseText.length) {
+          direction = -1;
+        }
+      }
+      setProcessingText(baseText.substring(0, currentLength) + '');
+    }, 150);
+
+    return () => clearInterval(interval);
+  }, [isLoading]);
 
   const datingApps = [
     {
@@ -60,6 +91,8 @@ export default function Home() {
     const file = e.target.files?.[0];
     if (file) {
       setSelectedFile(file);
+      setGeneratedImageUrl(null);
+      setShowDownload(false);
       const reader = new FileReader();
       reader.onloadend = () => {
         setImagePreview(reader.result);
@@ -130,7 +163,20 @@ export default function Home() {
     }
   };
 
-  const handleDownload = async () => {
+  const handleDownload = () => {
+    if (!generatedImageUrl) {
+      setError('No image available to download');
+      return;
+    }
+    setShowPricingPopup(true);
+  };
+
+  const handleProceedToEmail = () => {
+    setShowPricingPopup(false);
+    setShowEmailPopup(true);
+  };
+
+  const handleFinalDownload = async () => {
     if (!email || !email.includes('@')) {
       setError('Please enter a valid email address');
       return;
@@ -151,6 +197,7 @@ export default function Home() {
         body: JSON.stringify({
           email,
           imageUrl: generatedImageUrl,
+          plan: selectedPlan,
         }),
       });
 
@@ -171,6 +218,8 @@ export default function Home() {
       document.body.removeChild(a);
       
       console.log('Download initiated for email:', email);
+      setShowEmailPopup(false);
+      setEmail('');
     } catch (err) {
       console.error('Download error:', err);
       setError('Failed to download image');
@@ -187,20 +236,24 @@ export default function Home() {
       {/* Header */}
       <header className="w-full py-4 px-6 bg-slate-950/50 backdrop-blur-md border-b border-slate-700/50">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-2">
+          <button 
+            onClick={() => setCurrentPage('home')}
+            className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+          >
             <Sparkles className="w-5 h-5 text-cyan-400" />
             <span className="font-semibold text-white">AI Image Studio</span>
-          </div>
+          </button>
           <nav className="flex gap-6 text-sm text-slate-400">
-            <a href="#" className="hover:text-cyan-400 transition-colors">Features</a>
-            <a href="#" className="hover:text-cyan-400 transition-colors">Pricing</a>
-            <a href="#" className="hover:text-cyan-400 transition-colors">About</a>
+            <button onClick={() => setCurrentPage('home')} className="hover:text-cyan-400 transition-colors">Features</button>
+            <button onClick={() => setCurrentPage('pricing')} className="hover:text-cyan-400 transition-colors">Pricing</button>
+            <button onClick={() => setCurrentPage('about')} className="hover:text-cyan-400 transition-colors">About</button>
           </nav>
         </div>
       </header>
 
       {/* Main Content */}
       <main className="flex-1 w-full">
+        {currentPage === 'home' && (
         <div className="max-w-6xl mx-auto px-6 py-12">
           {/* Title */}
           <div className="text-center mb-16">
@@ -284,10 +337,9 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Image Uploader and Pricing Side by Side */}
-          <div className="flex gap-8 max-w-6xl mx-auto items-stretch mb-20">
-            {/* Image Uploader */}
-            <div className="flex-1">
+          {/* Image Uploader */}
+          <div className="max-w-4xl mx-auto mb-20">
+            <div className="w-full">
               <div
                 className={`relative border-2 border-dashed rounded-2xl p-12 transition-all h-full flex flex-col ${
                   isDragging
@@ -314,20 +366,74 @@ export default function Home() {
                   className="hidden"
                   id="file-upload"
                 />
+                {/* Processing Overlay */}
+                {isLoading && (
+                  <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-sm rounded-2xl z-30 flex items-center justify-center">
+                    <div className="text-center">
+                      <div className="mb-4">
+                        <Sparkles className="w-16 h-16 text-cyan-400 mx-auto animate-pulse" />
+                      </div>
+                      <h3 className="text-3xl font-bold text-white mb-2">
+                        {processingText}
+                      </h3>
+                      <p className="text-slate-300 text-sm">AI is enhancing your image</p>
+                    </div>
+                  </div>
+                )}
+
                 <div className="text-center flex flex-col justify-center flex-1">
                   {imagePreview ? (
                     <>
-                      <div className="relative mb-4 max-h-48 w-full flex items-center justify-center overflow-hidden rounded-lg">
-                        <img
-                          src={imagePreview}
-                          alt="Preview"
-                          className="max-h-48 max-w-full object-contain"
-                        />
-                      </div>
-                      <h3 className="text-lg font-semibold text-white mb-2">
+                      {/* Before/After Image Display */}
+                      {generatedImageUrl ? (
+                        <div className="mb-2">
+                          <div className="grid grid-cols-2 gap-4 mb-2 max-w-2xl mx-auto">
+                            {/* Before Image */}
+                            <div className="relative">
+                              <div className="absolute top-2 left-2 bg-slate-900/80 text-white px-3 py-1 rounded-full text-xs font-semibold z-10">
+                                Before
+                              </div>
+                              <div className="aspect-square rounded-lg overflow-hidden border-2 border-slate-600">
+                                <img
+                                  src={imagePreview}
+                                  alt="Original"
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
+                            </div>
+                            {/* After Image */}
+                            <div className="relative">
+                              <div className="absolute top-2 left-2 bg-cyan-500 text-white px-3 py-1 rounded-full text-xs font-semibold z-10">
+                                After
+                              </div>
+                              <div className="aspect-square rounded-lg overflow-hidden border-2 border-cyan-500">
+                                <img
+                                  src={generatedImageUrl}
+                                  alt="Enhanced"
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="mb-4">
+                          <div className="relative w-full max-w-xs mx-auto">
+                            <div className="aspect-square rounded-lg overflow-hidden border-2 border-slate-600">
+                              <img
+                                src={imagePreview}
+                                alt="Preview"
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      <h3 className="text-lg font-semibold text-white mb-1">
                         {selectedFile?.name}
                       </h3>
-                      <p className="text-slate-400 mb-6 text-sm">
+                      <p className="text-slate-400 mb-4 text-sm">
                         {(selectedFile?.size / 1024 / 1024).toFixed(2)} MB
                       </p>
                       {error && (
@@ -335,31 +441,51 @@ export default function Home() {
                           {error}
                         </div>
                       )}
-                      <textarea
-                        value={prompt}
-                        onChange={(e) => setPrompt(e.target.value)}
-                        placeholder="Describe your preferred modifications (e.g., brighten face, enhance colors, smooth skin)"
-                        className="w-full px-4 py-3 mb-4 bg-slate-700/50 border border-slate-600 rounded-lg text-white text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent resize-none relative z-10"
-                        rows="4"
-                      />
-                      <div className="flex gap-4 justify-center flex-wrap">
-                        <Button
-                          onClick={handleStart}
-                          disabled={isLoading}
-                          size="lg"
-                          className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white px-6 py-4 text-sm shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          <Sparkles className="w-4 h-4 mr-2" />
-                          {isLoading ? 'Processing...' : 'Start AI Processing'}
-                        </Button>
-                        <label
-                          htmlFor="file-upload"
-                          className="inline-flex items-center px-4 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-600 cursor-pointer transition-colors shadow-lg text-sm"
-                        >
-                          <Upload className="w-4 h-4 mr-2" />
-                          Change Image
-                        </label>
-                      </div>
+                      
+                      {!generatedImageUrl && (
+                        <>
+                          <div className="flex gap-4 justify-center flex-wrap">
+                            <Button
+                              onClick={handleStart}
+                              disabled={isLoading}
+                              size="lg"
+                              className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white px-6 py-4 text-sm shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              <Sparkles className="w-4 h-4 mr-2" />
+                              Start AI Processing
+                            </Button>
+                            <label
+                              htmlFor="file-upload"
+                              className="inline-flex items-center px-4 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-600 cursor-pointer transition-colors shadow-lg text-sm"
+                            >
+                              <Upload className="w-4 h-4 mr-2" />
+                              Change Image
+                            </label>
+                          </div>
+                        </>
+                      )}
+                      
+                      {generatedImageUrl && (
+                        <div className="flex flex-col gap-3 items-center w-full max-w-md mx-auto">
+                          <Button
+                            onClick={() => {
+                              document.getElementById('file-upload').click();
+                            }}
+                            size="lg"
+                            className="bg-slate-700 hover:bg-slate-600 text-white w-full py-4"
+                          >
+                            Process Another Image
+                          </Button>
+                          <Button
+                            onClick={handleDownload}
+                            size="lg"
+                            className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white w-full py-4"
+                          >
+                            <Download className="w-5 h-5 mr-2" />
+                            Download Image
+                          </Button>
+                        </div>
+                      )}
                     </>
                   ) : (
                     <>
@@ -388,73 +514,146 @@ export default function Home() {
                 </div>
               </div>
             </div>
-
-            {/* Pricing Section */}
-            <div className="w-80 flex-shrink-0">
-              <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-3xl p-8 border border-cyan-500/30 shadow-2xl hover:shadow-cyan-500/20 transition-shadow duration-300 h-full flex flex-col justify-between">
-                <div>
-                  <p className="text-slate-400 text-sm uppercase tracking-widest mb-2">Limited Time Offer</p>
-                  <div className="mb-6">
-                    <span className="text-5xl font-bold text-white">€9.99</span>
-                    <p className="text-slate-400 text-lg mt-2">for 3 Pictures</p>
-                  </div>
-                  <ul className="text-left space-y-3 mb-8 text-slate-300">
-                    <li className="flex items-center gap-2">
-                      <span className="text-cyan-400">✓</span>
-                      AI-Powered Enhancement
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <span className="text-cyan-400">✓</span>
-                      High-Quality Results
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <span className="text-cyan-400">✓</span>
-                      Instant Processing
-                    </li>
-                  </ul>
-                </div>
-                <button className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-semibold py-3 rounded-xl transition-all duration-300 shadow-lg">
-                  Get Started Now
-                </button>
-              </div>
-            </div>
           </div>
 
-          {/* Download Section - Appears after processing */}
-          {showDownload && generatedImageUrl && (
-            <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-3xl p-8 border border-cyan-500/30 shadow-2xl max-w-md mx-auto mt-8">
-              <div className="text-center mb-6">
-                <h3 className="text-2xl font-bold text-white mb-2">
-                  🎉 Your Image is Ready!
-                </h3>
-                <p className="text-slate-300 text-sm">
-                  Enter your email address to download your enhanced image
-                </p>
-              </div>
-              
-              {error && (
-                <div className="mb-4 p-3 bg-red-500/20 border border-red-500/50 rounded-lg text-red-300 text-sm">
-                  {error}
+          {/* Pricing Popup */}
+          {showPricingPopup && (
+            <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+              <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-3xl p-8 border border-cyan-500/30 shadow-2xl max-w-2xl w-full relative">
+                <button
+                  onClick={() => setShowPricingPopup(false)}
+                  className="absolute top-4 right-4 p-2 bg-slate-700 hover:bg-slate-600 text-white rounded-full shadow-lg transition-colors duration-200"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+                
+                <div className="text-center mb-8">
+                  <h3 className="text-3xl font-bold text-white mb-2">
+                    Choose Your Plan
+                  </h3>
+                  <p className="text-slate-300">
+                    Select the perfect plan for your needs
+                  </p>
                 </div>
-              )}
 
-              <div className="mb-4">
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="your.email@example.com"
-                  className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                  {/* Single Image Plan */}
+                  <div 
+                    onClick={() => setSelectedPlan('single')}
+                    className={`bg-slate-800/50 rounded-2xl p-6 border-2 transition-all cursor-pointer hover:scale-105 ${
+                      selectedPlan === 'single' ? 'border-cyan-500 shadow-cyan-500/20' : 'border-slate-700/50'
+                    }`}
+                  >
+                    <div className="text-center">
+                      <p className="text-slate-400 text-sm uppercase tracking-widest mb-2">Single Image</p>
+                      <div className="mb-4">
+                        <span className="text-4xl font-bold text-white">€3.99</span>
+                      </div>
+                      <ul className="text-left space-y-2 text-slate-300 text-sm">
+                        <li className="flex items-center gap-2">
+                          <span className="text-cyan-400">✓</span>
+                          1 Image Credit
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <span className="text-cyan-400">✓</span>
+                          AI-Powered Enhancement
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <span className="text-cyan-400">✓</span>
+                          High-Quality Results
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+
+                  {/* 3 Images Plan */}
+                  <div 
+                    onClick={() => setSelectedPlan('triple')}
+                    className={`bg-slate-800/50 rounded-2xl p-6 border-2 transition-all cursor-pointer hover:scale-105 relative ${
+                      selectedPlan === 'triple' ? 'border-cyan-500 shadow-cyan-500/20' : 'border-slate-700/50'
+                    }`}
+                  >
+                    <div className="absolute -top-3 right-4 bg-gradient-to-r from-cyan-500 to-blue-600 text-white text-xs font-bold px-3 py-1 rounded-full">
+                      BEST VALUE
+                    </div>
+                    <div className="text-center">
+                      <p className="text-slate-400 text-sm uppercase tracking-widest mb-2">3 Images Bundle</p>
+                      <div className="mb-4">
+                        <span className="text-4xl font-bold text-white">€9.99</span>
+                      </div>
+                      <ul className="text-left space-y-2 text-slate-300 text-sm">
+                        <li className="flex items-center gap-2">
+                          <span className="text-cyan-400">✓</span>
+                          3 Image Credits
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <span className="text-cyan-400">✓</span>
+                          AI-Powered Enhancement
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <span className="text-cyan-400">✓</span>
+                          Save €2.00
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+
+                <Button
+                  onClick={handleProceedToEmail}
+                  disabled={!selectedPlan}
+                  className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-semibold py-3 rounded-xl transition-all duration-300 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Proceed to Payment
+                </Button>
               </div>
+            </div>
+          )}
 
-              <Button
-                onClick={handleDownload}
-                className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-semibold py-3 rounded-xl transition-all duration-300 shadow-lg"
-              >
-                <Download className="w-5 h-5 mr-2 inline" />
-                Download Enhanced Image
-              </Button>
+          {/* Email Popup */}
+          {showEmailPopup && (
+            <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+              <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-3xl p-8 border border-cyan-500/30 shadow-2xl max-w-md w-full relative">
+                <button
+                  onClick={() => setShowEmailPopup(false)}
+                  className="absolute top-4 right-4 p-2 bg-slate-700 hover:bg-slate-600 text-white rounded-full shadow-lg transition-colors duration-200"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+                
+                <div className="text-center mb-6">
+                  <h3 className="text-2xl font-bold text-white mb-2">
+                    🎉 Almost There!
+                  </h3>
+                  <p className="text-slate-300 text-sm">
+                    Enter your email to complete your purchase and download
+                  </p>
+                </div>
+                
+                {error && (
+                  <div className="mb-4 p-3 bg-red-500/20 border border-red-500/50 rounded-lg text-red-300 text-sm">
+                    {error}
+                  </div>
+                )}
+
+                <div className="mb-6">
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="your.email@example.com"
+                    className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                  />
+                </div>
+
+                <Button
+                  onClick={handleFinalDownload}
+                  className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-semibold py-3 rounded-xl transition-all duration-300 shadow-lg"
+                >
+                  <Download className="w-5 h-5 mr-2 inline" />
+                  Complete & Download
+                </Button>
+              </div>
             </div>
           )}
 
@@ -648,6 +847,175 @@ export default function Home() {
             </div>
           </div>
         </div>
+        )}
+
+        {/* Pricing Page */}
+        {currentPage === 'pricing' && (
+          <div className="max-w-4xl mx-auto px-6 py-12">
+            <div className="text-center mb-12">
+              <h1 className="text-5xl font-bold text-white mb-4">
+                Simple, Transparent <span className="bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">Pricing</span>
+              </h1>
+              <p className="text-lg text-slate-300">Choose the plan that works best for you</p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
+              {/* Single Image Plan */}
+              <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-3xl p-8 border border-slate-700/50 hover:border-cyan-500/30 transition-all duration-300 hover:scale-105">
+                <div className="text-center">
+                  <p className="text-slate-400 text-sm uppercase tracking-widest mb-4">Single Image</p>
+                  <div className="mb-6">
+                    <span className="text-5xl font-bold text-white">€3.99</span>
+                  </div>
+                  <ul className="text-left space-y-3 mb-8 text-slate-300">
+                    <li className="flex items-center gap-2">
+                      <span className="text-cyan-400">✓</span>
+                      1 Image Credit
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <span className="text-cyan-400">✓</span>
+                      AI-Powered Enhancement
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <span className="text-cyan-400">✓</span>
+                      High-Quality Results
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <span className="text-cyan-400">✓</span>
+                      Instant Processing
+                    </li>
+                  </ul>
+                  <Button
+                    onClick={() => setCurrentPage('home')}
+                    className="w-full bg-slate-700 hover:bg-slate-600 text-white font-semibold py-3 rounded-xl transition-all duration-300"
+                  >
+                    Get Started
+                  </Button>
+                </div>
+              </div>
+
+              {/* 3 Images Plan */}
+              <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-3xl p-8 border border-cyan-500/30 hover:border-cyan-500/50 transition-all duration-300 hover:scale-105 relative">
+                <div className="absolute -top-3 right-4 bg-gradient-to-r from-cyan-500 to-blue-600 text-white text-xs font-bold px-3 py-1 rounded-full">
+                  BEST VALUE
+                </div>
+                <div className="text-center">
+                  <p className="text-slate-400 text-sm uppercase tracking-widest mb-4">3 Images Bundle</p>
+                  <div className="mb-6">
+                    <span className="text-5xl font-bold text-white">€9.99</span>
+                  </div>
+                  <ul className="text-left space-y-3 mb-8 text-slate-300">
+                    <li className="flex items-center gap-2">
+                      <span className="text-cyan-400">✓</span>
+                      3 Image Credits
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <span className="text-cyan-400">✓</span>
+                      AI-Powered Enhancement
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <span className="text-cyan-400">✓</span>
+                      High-Quality Results
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <span className="text-cyan-400">✓</span>
+                      Save €2.00
+                    </li>
+                  </ul>
+                  <Button
+                    onClick={() => setCurrentPage('home')}
+                    className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-semibold py-3 rounded-xl transition-all duration-300"
+                  >
+                    Get Started
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            <div className="text-center text-slate-400 text-sm">
+              <p>All prices include secure payment processing. No subscription required.</p>
+            </div>
+          </div>
+        )}
+
+        {/* About Page */}
+        {currentPage === 'about' && (
+          <div className="max-w-4xl mx-auto px-6 py-12">
+            <div className="text-center mb-12">
+              <h1 className="text-5xl font-bold text-white mb-4">
+                About <span className="bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">AI Image Studio</span>
+              </h1>
+              <p className="text-lg text-slate-300">Transforming your photos with cutting-edge AI technology</p>
+            </div>
+
+            <div className="space-y-8">
+              <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-8 border border-slate-700/50">
+                <h2 className="text-2xl font-bold text-white mb-4">Our Mission</h2>
+                <p className="text-slate-300 leading-relaxed">
+                  At AI Image Studio, we believe everyone deserves to present their best self online. Our advanced AI technology enhances your photos while maintaining their natural authenticity, helping you stand out on dating apps and social media.
+                </p>
+              </div>
+
+              <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-8 border border-slate-700/50">
+                <h2 className="text-2xl font-bold text-white mb-4">How It Works</h2>
+                <div className="space-y-4 text-slate-300">
+                  <div className="flex gap-4">
+                    <div className="flex-shrink-0 w-8 h-8 bg-cyan-500 rounded-full flex items-center justify-center text-white font-bold">1</div>
+                    <div>
+                      <h3 className="font-semibold text-white mb-1">Upload Your Photo</h3>
+                      <p>Simply drag and drop or select an image from your device.</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-4">
+                    <div className="flex-shrink-0 w-8 h-8 bg-cyan-500 rounded-full flex items-center justify-center text-white font-bold">2</div>
+                    <div>
+                      <h3 className="font-semibold text-white mb-1">AI Enhancement</h3>
+                      <p>Our advanced algorithms analyze and enhance your photo automatically.</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-4">
+                    <div className="flex-shrink-0 w-8 h-8 bg-cyan-500 rounded-full flex items-center justify-center text-white font-bold">3</div>
+                    <div>
+                      <h3 className="font-semibold text-white mb-1">Download & Share</h3>
+                      <p>Get your enhanced photo instantly and use it anywhere you want.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-8 border border-slate-700/50">
+                <h2 className="text-2xl font-bold text-white mb-4">Why Choose Us</h2>
+                <ul className="space-y-3 text-slate-300">
+                  <li className="flex items-start gap-2">
+                    <span className="text-cyan-400 mt-1">✓</span>
+                    <span><strong className="text-white">Advanced AI Technology:</strong> State-of-the-art machine learning models for natural-looking results</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-cyan-400 mt-1">✓</span>
+                    <span><strong className="text-white">Instant Processing:</strong> Get your enhanced photos in seconds</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-cyan-400 mt-1">✓</span>
+                    <span><strong className="text-white">Privacy First:</strong> Your photos are processed securely and never stored permanently</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-cyan-400 mt-1">✓</span>
+                    <span><strong className="text-white">No Subscription:</strong> Pay only for what you need, no hidden fees</span>
+                  </li>
+                </ul>
+              </div>
+
+              <div className="text-center">
+                <Button
+                  onClick={() => setCurrentPage('home')}
+                  className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-semibold px-8 py-3 rounded-xl transition-all duration-300"
+                >
+                  Try It Now
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
 
       {/* Footer */}
