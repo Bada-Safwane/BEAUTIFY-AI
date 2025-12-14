@@ -138,8 +138,15 @@ export default function Home() {
           }
         } else {
           // Refresh user account data to get updated credits
-          await fetchUserAccount(token);
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          // Poll for credits update (webhook might take a few seconds)
+          let retries = 0;
+          const maxRetries = 5;
+          while (retries < maxRetries) {
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            await fetchUserAccount(token);
+            retries++;
+            if (retries === maxRetries) break;
+          }
         }
         
         // Check purchase context

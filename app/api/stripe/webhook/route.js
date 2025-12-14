@@ -30,6 +30,12 @@ export async function POST(request) {
     const session = event.data.object;
     
     const { userId, email, plan, credits, imageUrl, context, requiresSignup } = session.metadata;
+    
+    console.log('=== WEBHOOK: Payment completed ===');
+    console.log('Context:', context);
+    console.log('Credits:', credits);
+    console.log('ImageUrl:', imageUrl);
+    console.log('Email:', email);
 
     let client;
     
@@ -78,6 +84,7 @@ export async function POST(request) {
           });
         } else {
           // Pricing page purchase - add all credits
+          console.log('Adding full credits:', creditAmount, 'to user:', user.email);
           await users.updateOne(
             { _id: user._id },
             { 
@@ -85,6 +92,7 @@ export async function POST(request) {
               $set: { updatedAt: new Date() }
             }
           );
+          console.log('Credits added successfully');
         }
 
         // Clean up any pending credits for this user
