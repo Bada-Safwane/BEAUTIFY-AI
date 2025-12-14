@@ -64,39 +64,33 @@ export default function Home() {
       const shouldDownload = urlParams.get('download');
 
       if (paymentStatus === 'success') {
-        // Check if this was a single image purchase that needs download
-        if (shouldDownload === 'true') {
-          const imageUrl = sessionStorage.getItem('pendingImageUrl');
-          if (imageUrl) {
-            // Download the image
-            fetch(imageUrl)
-              .then(response => response.blob())
-              .then(blob => {
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `ai-enhanced-${Date.now()}.png`;
-                document.body.appendChild(a);
-                a.click();
-                window.URL.revokeObjectURL(url);
-                document.body.removeChild(a);
-                sessionStorage.removeItem('pendingImageUrl');
-              })
-              .catch(err => console.error('Download error:', err));
-          }
-        } else {
-          // Multi-pack purchase - refresh credits and redirect based on login status
-          if (authToken) {
-            // Fetch updated account data to show new credits
-            await fetchUserAccount(authToken);
-          }
-          
-          if (!isLoggedIn) {
-            setCurrentPage('signup');
-          } else {
-            setCurrentPage('account');
-          }
+        // Refresh user account data to get updated credits
+        if (authToken) {
+          await fetchUserAccount(authToken);
         }
+        
+        // Check if there's an image to download
+        const imageUrl = sessionStorage.getItem('pendingImageUrl');
+        if (imageUrl) {
+          // Download the image
+          fetch(imageUrl)
+            .then(response => response.blob())
+            .then(blob => {
+              const url = window.URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = `ai-enhanced-${Date.now()}.png`;
+              document.body.appendChild(a);
+              a.click();
+              window.URL.revokeObjectURL(url);
+              document.body.removeChild(a);
+              sessionStorage.removeItem('pendingImageUrl');
+            })
+            .catch(err => console.error('Download error:', err));
+        }
+        
+        // Always redirect to home page after payment
+        setCurrentPage('home');
         
         // Clean up URL
         window.history.replaceState({}, document.title, window.location.pathname);

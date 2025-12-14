@@ -40,6 +40,7 @@ export async function POST(request) {
     const database = client.db('GeminiDB');
     const users = database.collection('users');
     const pendingCredits = database.collection('pendingCredits');
+    const pictures = database.collection('pictures');
 
     // Check if user already exists
     const existingUser = await users.findOne({
@@ -75,7 +76,7 @@ export async function POST(request) {
       updatedAt: new Date()
     });
 
-    // If there were pending credits, mark them as claimed
+    // If there were pending credits, mark them as claimed and save image if present
     if (pendingCredit) {
       await pendingCredits.updateOne(
         { _id: pendingCredit._id },
@@ -88,6 +89,19 @@ export async function POST(request) {
         }
       );
       console.log(`Claimed ${initialCredits} pending credits for ${email}`);
+
+      // If there's an image URL in pending credits, save it to pictures
+      if (pendingCredit.imageUrl && pendingCredit.imageUrl !== '') {
+        await pictures.insertOne({
+          email: email,
+          userId: result.insertedId.toString(),
+          username: username,
+          image: pendingCredit.imageUrl,
+          plan: pendingCredit.plan,
+          createdAt: new Date()
+        });
+        console.log(`Saved pending image for user ${email}`);
+      }
     }
 
     // Generate JWT token

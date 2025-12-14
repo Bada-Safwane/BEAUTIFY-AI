@@ -42,59 +42,52 @@ export async function POST(request) {
       const pictures = database.collection('pictures');
       const pendingCredits = database.collection('pendingCredits');
 
-      // Scenario 1: Logged-in user purchasing credits
+      // Try to find user by email in case they just signed up
+      let user = null;
       if (userId && userId !== 'guest') {
-        const creditAmount = parseInt(credits);
-        
+        user = await users.findOne({ _id: new ObjectId(userId) });
+      } else {
+        user = await users.findOne({ email: email });
+      }
+
+      const creditAmount = parseInt(credits);
+
+      // Scenario 1: User exists (either logged in or just signed up)
+      if (user) {
         await users.updateOne(
-          { _id: new ObjectId(userId) },
+          { _id: user._id },
           { 
             $inc: { credits: creditAmount },
             $set: { updatedAt: new Date() }
           }
         );
 
-        console.log(`Added ${creditAmount} credits to user ${userId}`);
+        console.log(`Added ${creditAmount} credits to user ${user._id}`);
 
         // If they have an image from download context, save it
         if (imageUrl && imageUrl !== '' && context === 'download') {
-          const user = await users.findOne({ _id: new ObjectId(userId) });
-          
           await pictures.insertOne({
             email: email,
-            userId: userId,
-            username: user?.username || null,
+            userId: user._id.toString(),
+            username: user.username || null,
             image: imageUrl,
             plan: plan,
             createdAt: new Date()
           });
 
-          console.log(`Saved image for logged-in user ${email}`);
+          console.log(`Saved image for user ${email}`);
         }
-      }
-      // Scenario 2: Guest purchasing single image (download context)
-      else if (plan === 'single' && context === 'download' && imageUrl && imageUrl !== '') {
-        // Just save the image for immediate download, no credits needed
-        await pictures.insertOne({
-          email: email,
-          userId: null,
-          username: null,
-          image: imageUrl,
-          plan: plan,
-          createdAt: new Date()
-        });
 
-        console.log(`Saved single image for guest ${email}`);
+        // Clean up any pending credits for this user
+        await pendingCredits.deleteMany({ email: email });
       }
-      // Scenario 3: Guest purchasing 3-pack or 10-pack (requires signup)
-      else if (requiresSignup === 'true') {
-        const creditAmount = parseInt(credits);
-        
-        // Store pending credits until user signs up
+      // Scenario 2: No user found - store as pending credits
+      else {
         await pendingCredits.insertOne({
           email: email,
           credits: creditAmount,
           plan: plan,
+          imageUrl: imageUrl || '',
           stripeSessionId: session.id,
           createdAt: new Date(),
           expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
