@@ -152,36 +152,12 @@ export default function Home() {
         // Check purchase context
         const purchaseContext = sessionStorage.getItem('purchaseContext');
         
-        // If there's an image to restore AND it's from download context, save it and download it
+        // If there's an image to restore AND it's from download context, restore UI and download it
         if (imageToDownload && purchaseContext === 'download') {
           setGeneratedImageUrl(imageToDownload);
           setShowDownload(true);
           
-          // IMPORTANT: Save the image to database if user is logged in
-          if (token) {
-            try {
-              // The save-download API will get the user info from the token
-              await fetch('/api/save-download', {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                  email: 'from-payment',
-                  imageUrl: imageToDownload,
-                  plan: 'stripe-payment',
-                }),
-              });
-              
-              // Refresh account to show the new image
-              setTimeout(() => {
-                fetchUserAccount(token);
-              }, 1000);
-            } catch (err) {
-              console.error('Error saving image:', err);
-            }
-          }
+          // Note: Image is already saved by the webhook, no need to save again here
           
           // Create watermarked preview
           createWatermarkedPreview(imageToDownload).then(watermarked => {
