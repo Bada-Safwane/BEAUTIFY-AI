@@ -64,24 +64,31 @@ export default function Home() {
       const shouldDownload = urlParams.get('download');
 
       if (paymentStatus === 'success') {
+        // Restore complete page state from sessionStorage
+        const storedImagePreview = sessionStorage.getItem('pendingImagePreview');
+        const storedGeneratedUrl = sessionStorage.getItem('pendingGeneratedUrl');
+        const storedShowDownload = sessionStorage.getItem('pendingShowDownload');
+        const imageToDownload = sessionStorage.getItem('pendingImageUrl');
+        
+        if (storedImagePreview) {
+          setImagePreview(storedImagePreview);
+        }
+        if (storedGeneratedUrl) {
+          setGeneratedImageUrl(storedGeneratedUrl);
+        }
+        if (storedShowDownload === 'true') {
+          setShowDownload(true);
+        }
+        
         // Refresh user account data to get updated credits
         if (authToken) {
           await fetchUserAccount(authToken);
         }
         
-        // Restore image preview from sessionStorage
-        const imagePreviewUrl = sessionStorage.getItem('pendingImagePreview');
-        if (imagePreviewUrl) {
-          setGeneratedImageUrl(imagePreviewUrl);
-          setShowDownload(true);
-        }
-        
-        // Check if there's an image to download and trigger download
-        const imageUrl = sessionStorage.getItem('pendingImageUrl');
-        if (imageUrl) {
-          // Small delay to ensure page is loaded before download
+        // Trigger download after state is restored
+        if (imageToDownload) {
           setTimeout(() => {
-            fetch(imageUrl)
+            fetch(imageToDownload)
               .then(response => response.blob())
               .then(blob => {
                 const url = window.URL.createObjectURL(blob);
@@ -94,14 +101,16 @@ export default function Home() {
                 document.body.removeChild(a);
               })
               .catch(err => console.error('Download error:', err));
-          }, 1000);
-          
-          // Clean up sessionStorage
-          sessionStorage.removeItem('pendingImageUrl');
-          sessionStorage.removeItem('pendingImagePreview');
+          }, 1500);
         }
         
-        // Always redirect to home page after payment
+        // Clean up sessionStorage
+        sessionStorage.removeItem('pendingImageUrl');
+        sessionStorage.removeItem('pendingImagePreview');
+        sessionStorage.removeItem('pendingGeneratedUrl');
+        sessionStorage.removeItem('pendingShowDownload');
+        
+        // Stay on home page
         setCurrentPage('home');
         
         // Clean up URL
@@ -407,11 +416,16 @@ export default function Home() {
       const data = await response.json();
 
       if (data.success && data.url) {
-        // Store image URL in sessionStorage for download after payment
+        // Store complete state before going to Stripe
         if (generatedImageUrl) {
           sessionStorage.setItem('pendingImageUrl', generatedImageUrl);
-          sessionStorage.setItem('pendingImagePreview', generatedImageUrl);
         }
+        if (imagePreview) {
+          sessionStorage.setItem('pendingImagePreview', imagePreview);
+        }
+        sessionStorage.setItem('pendingGeneratedUrl', generatedImageUrl || '');
+        sessionStorage.setItem('pendingShowDownload', showDownload ? 'true' : 'false');
+        
         // Redirect to Stripe checkout
         window.location.href = data.url;
       } else {
@@ -476,24 +490,7 @@ export default function Home() {
     }
 
     try {
-      // Deduct credit from user account
-      const updateResponse = await fetch('/api/user/account', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authToken}`
-        },
-        body: JSON.stringify({
-          credits: userData.credits - 1
-        }),
-      });
-
-      if (!updateResponse.ok) {
-        setError('Failed to deduct credit');
-        return;
-      }
-
-      // Save image to user's account
+      // First, save image and deduct credit via API
       const saveResponse = await fetch('/api/save-download', {
         method: 'POST',
         headers: {
@@ -508,8 +505,25 @@ export default function Home() {
       });
 
       if (!saveResponse.ok) {
-        console.error('Failed to save download record');
+        setError('Failed to process download');
+        return;
       }
+
+      // Update local credits immediately
+      const newCredits = userData.credits - 1;
+      setUserData({ ...userData, credits: newCredits });
+
+      // Also update in database
+      await fetch('/api/user/account', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`
+        },
+        body: JSON.stringify({
+          credits: newCredits
+        }),
+      });
 
       // Download the image
       const response = await fetch(generatedImageUrl);
