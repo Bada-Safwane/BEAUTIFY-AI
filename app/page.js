@@ -713,7 +713,7 @@ export default function Home() {
             className="flex items-center gap-2 hover:opacity-80 transition-opacity"
           >
             <Sparkles className="w-5 h-5 text-cyan-400" />
-            <span className="font-semibold text-white text-sm md:text-base">Better Selfie</span>
+            <span className="font-semibold text-white text-sm md:text-base">BetterSelfie AI</span>
           </button>
           
           {/* Desktop Navigation */}
@@ -1899,7 +1899,7 @@ export default function Home() {
           <div className="max-w-4xl mx-auto px-6 py-12">
             <div className="text-center mb-12">
               <h1 className="text-5xl font-bold text-white mb-4">
-                About <span className="bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">Better Selfie</span>
+                About <span className="bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">BetterSelfie AI</span>
               </h1>
               <p className="text-lg text-slate-300">Transforming your photos with cutting-edge AI technology</p>
             </div>
@@ -1908,7 +1908,7 @@ export default function Home() {
               <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-8 border border-slate-700/50">
                 <h2 className="text-2xl font-bold text-white mb-4">Our Mission</h2>
                 <p className="text-slate-300 leading-relaxed">
-                  At Better Selfie, we believe everyone deserves to present their best self online. Our advanced AI technology enhances your photos while maintaining their natural authenticity, helping you elevate your social media presence and make a lasting impression.
+                  At BetterSelfie AI, we believe everyone deserves to present their best self online. Our advanced AI technology enhances your photos while maintaining their natural authenticity, helping you elevate your social media presence and make a lasting impression.
                 </p>
               </div>
 
@@ -2449,7 +2449,7 @@ export default function Home() {
       {/* Footer */}
       <footer className="w-full py-6 px-6 bg-slate-950/50 border-t border-slate-700/50">
         <div className="max-w-7xl mx-auto text-center text-sm text-slate-400">
-          <p>© 2024 Better Selfie. Powered by advanced machine learning.</p>
+          <p>© 2024 BetterSelfie AI. Powered by advanced machine learning.</p>
         </div>
       </footer>
     </div>
