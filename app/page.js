@@ -298,6 +298,25 @@ export default function Home() {
       return;
     }
 
+    // For single image purchase by non-logged-in users, collect email first
+    if (selectedPlan === 'single' && !isLoggedIn && !email) {
+      // Show email input popup
+      const userEmail = prompt('Please enter your email to receive your enhanced image:');
+      if (!userEmail || !userEmail.includes('@')) {
+        setError('Valid email is required');
+        return;
+      }
+      setEmail(userEmail);
+      
+      // Continue with payment after email is set
+      await proceedToCheckout(userEmail);
+      return;
+    }
+
+    await proceedToCheckout(userData?.email || email);
+  };
+
+  const proceedToCheckout = async (userEmail) => {
     try {
       const headers = {
         'Content-Type': 'application/json',
@@ -319,7 +338,7 @@ export default function Home() {
         headers,
         body: JSON.stringify({
           plan: planMap[selectedPlan],
-          email: userData?.email || email,
+          email: userEmail,
           imageUrl: generatedImageUrl,
           context: 'download' // This is from the download button flow
         }),
