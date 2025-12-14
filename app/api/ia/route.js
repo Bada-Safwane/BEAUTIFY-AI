@@ -8,7 +8,7 @@ export async function POST(request) {
   try {
     const formData = await request.formData();
     const file = formData.get('file');
-    const prompt = formData.get('prompt') || 'enhance this photo with professional lighting and improvements to make them handsome and attractive while keeping their natural features';
+    const prompt = formData.get('prompt') || 'enhance this photo with professional lighting and improvements to make them handsome and attractive while keeping their features';
 
 
     if (!file) {

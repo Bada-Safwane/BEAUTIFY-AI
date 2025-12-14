@@ -37,6 +37,8 @@ export default function Home() {
   const [editUsername, setEditUsername] = useState('');
   const [editEmail, setEditEmail] = useState('');
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [watermarkedPreview, setWatermarkedPreview] = useState(null);
+  const [swapPolaroids, setSwapPolaroids] = useState(false);
 
   // Handle NextAuth Google session
   useEffect(() => {
@@ -61,6 +63,9 @@ export default function Home() {
         const plan = pendingPayment;
         sessionStorage.removeItem('pendingPaymentPlan');
         proceedToCheckout(plan, session.customToken);
+      } else {
+        // Otherwise, redirect to account page
+        setCurrentPage('account');
       }
     }
   }, [session]);
@@ -78,6 +83,15 @@ export default function Home() {
     if (savedPage) {
       setCurrentPage(savedPage);
     }
+  }, []);
+
+  // Swap polaroids animation every 3 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setSwapPolaroids(prev => !prev);
+    }, 3000);
+    
+    return () => clearInterval(interval);
   }, []);
 
   // Persist current page to localStorage
@@ -105,6 +119,11 @@ export default function Home() {
         if (shouldRestore === 'true' && imageToDownload) {
           setGeneratedImageUrl(imageToDownload);
           setShowDownload(true);
+          
+          // Create watermarked preview
+          createWatermarkedPreview(imageToDownload).then(watermarked => {
+            setWatermarkedPreview(watermarked);
+          });
           
           // Trigger download
           setTimeout(() => {
@@ -200,9 +219,9 @@ export default function Home() {
       color: 'from-red-500 to-pink-500'
     },
     {
-      name: 'Bumble',
-      logo: '/BMBL.svg',
-      color: 'from-yellow-400 to-yellow-600'
+      name: 'LinkedIn',
+      logo: 'https://upload.wikimedia.org/wikipedia/commons/c/ca/LinkedIn_logo_initials.png',
+      color: 'from-blue-500 to-blue-700'
     },
     {
       name: 'Hinge',
@@ -228,8 +247,8 @@ export default function Home() {
       label: 'Enhancement'
     },
     {
-      before: 'https://images.pexels.com/photos/1183099/pexels-photo-1183099.jpeg?auto=compress&cs=tinysrgb&w=400',
-      after: 'https://images.pexels.com/photos/1758144/pexels-photo-1758144.jpeg?auto=compress&cs=tinysrgb&w=400',
+      before: './before2.jpg',
+      after: './after2.png',
       label: 'Enhancement'
     }
   ];
@@ -287,6 +306,58 @@ export default function Home() {
     });
   };
 
+  const createWatermarkedPreview = (imageUrl) => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        
+        const ctx = canvas.getContext('2d');
+        
+        // Draw original image
+        ctx.drawImage(img, 0, 0);
+        
+        // Add semi-transparent watermark pattern
+        ctx.fillStyle = 'rgba(6, 182, 212, 0.08)';
+        const patternSize = 200;
+        for (let y = 0; y < canvas.height; y += patternSize) {
+          for (let x = 0; x < canvas.width; x += patternSize * 2) {
+            ctx.save();
+            ctx.translate(x + patternSize / 2, y + patternSize / 2);
+            ctx.rotate(-Math.PI / 8);
+            ctx.fillRect(-patternSize / 2, -patternSize / 2, patternSize, patternSize);
+            ctx.restore();
+          }
+        }
+        
+        // Add large centered watermark text
+        ctx.save();
+        ctx.translate(canvas.width / 2, canvas.height / 2);
+        ctx.rotate(-Math.PI / 8);
+        ctx.font = `bold ${Math.max(canvas.width / 10, 60)}px Arial`;
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+        ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)';
+        ctx.lineWidth = 3;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.strokeText('PREVIEW', 0, 0);
+        ctx.fillText('PREVIEW', 0, 0);
+        ctx.restore();
+        
+        // Convert to blob URL
+        canvas.toBlob((blob) => {
+          const url = URL.createObjectURL(blob);
+          resolve(url);
+        }, 'image/png');
+      };
+      img.onerror = () => resolve(imageUrl); // Fallback to original if error
+      img.src = imageUrl;
+    });
+  };
+
   const handleFileChange = async (e) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -294,6 +365,7 @@ export default function Home() {
       const compressedFile = await compressImage(file);
       setSelectedFile(compressedFile);
       setGeneratedImageUrl(null);
+      setWatermarkedPreview(null);
       setShowDownload(false);
       const reader = new FileReader();
       reader.onloadend = () => {
@@ -358,6 +430,10 @@ export default function Home() {
       if (data.success && data.imageUrl) {
         setGeneratedImageUrl(data.imageUrl);
         setShowDownload(true);
+        
+        // Create watermarked preview for display
+        const watermarked = await createWatermarkedPreview(data.imageUrl);
+        setWatermarkedPreview(watermarked);
       }
     } catch (err) {
       console.error('Error during AI processing:', err);
@@ -637,7 +713,7 @@ export default function Home() {
             className="flex items-center gap-2 hover:opacity-80 transition-opacity"
           >
             <Sparkles className="w-5 h-5 text-cyan-400" />
-            <span className="font-semibold text-white text-sm md:text-base">AI Image Studio</span>
+            <span className="font-semibold text-white text-sm md:text-base">Better Selfie</span>
           </button>
           
           {/* Desktop Navigation */}
@@ -754,12 +830,12 @@ export default function Home() {
           {/* Title */}
           <div className="text-center mb-16">
             <h1 className="text-5xl md:text-6xl font-bold text-white mb-4">
-              Get more matches with photos that
+              Stand out with photos that
               <br />
               <span className="bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">showcase your best self</span>
             </h1>
             <p className="text-lg text-slate-300 max-w-2xl mx-auto">
-            Make your imperfect pictures look perfect with Beatify AI
+            Transform your social media presence with professionally enhanced pictures
             </p>
           </div>
 
@@ -770,7 +846,7 @@ export default function Home() {
               <div className="flex justify-center items-center min-h-[320px]">
                 <div className="relative w-full max-w-xs h-80">
                   {/* Before Polaroid - Rotated Left */}
-                  <div className="absolute left-0 top-0 w-56 h-80 bg-white p-3 pb-14 shadow-2xl rotate-[-8deg] transition-all duration-300">
+                  <div className={`absolute left-0 top-0 w-56 h-80 bg-white p-3 pb-14 shadow-2xl rotate-[-12deg] transition-all duration-1000 ${swapPolaroids ? 'z-20' : 'z-10'}`}>
                     <div className="relative w-full h-52 overflow-hidden bg-slate-300">
                       <img
                         src={beforeAfterPairs[currentImageIndex].before}
@@ -785,7 +861,7 @@ export default function Home() {
                   </div>
 
                   {/* After Polaroid - Rotated Right */}
-                  <div className="absolute right-0 top-6 w-56 h-80 bg-white p-3 pb-14 shadow-2xl rotate-[6deg] transition-all duration-300">
+                  <div className={`absolute right-0 top-6 w-56 h-80 bg-white p-3 pb-14 shadow-2xl rotate-[10deg] transition-all duration-1000 ${swapPolaroids ? 'z-10' : 'z-20'}`}>
                     <div className="relative w-full h-52 overflow-hidden bg-slate-300">
                       <img
                         src={beforeAfterPairs[currentImageIndex].after}
@@ -839,7 +915,7 @@ export default function Home() {
                 <div key={index} className="flex justify-center items-center">
                   <div className="relative w-full max-w-xs h-80">
                     {/* Before Polaroid - Rotated Left */}
-                    <div className="absolute left-0 top-0 w-56 h-80 bg-white p-3 pb-14 shadow-2xl rotate-[-8deg] hover:rotate-[-2deg] transition-all duration-300 hover:scale-105 hover:z-20">
+                    <div className={`absolute left-0 top-0 w-56 h-80 bg-white p-3 pb-14 shadow-2xl rotate-[-12deg] hover:rotate-[-4deg] transition-all duration-1000 hover:scale-105 hover:z-30 ${swapPolaroids ? 'z-20' : 'z-10'}`}>
                       <div className="relative w-full h-52 overflow-hidden bg-slate-300">
                         <img
                           src={pair.before}
@@ -854,7 +930,7 @@ export default function Home() {
                     </div>
 
                     {/* After Polaroid - Rotated Right */}
-                    <div className="absolute right-0 top-6 w-56 h-80 bg-white p-3 pb-14 shadow-2xl rotate-[6deg] hover:rotate-[2deg] transition-all duration-300 hover:scale-105 hover:z-20">
+                    <div className={`absolute right-0 top-6 w-56 h-80 bg-white p-3 pb-14 shadow-2xl rotate-[10deg] hover:rotate-[4deg] transition-all duration-1000 hover:scale-105 hover:z-30 ${swapPolaroids ? 'z-10' : 'z-20'}`}>
                       <div className="relative w-full h-52 overflow-hidden bg-slate-300">
                         <img
                           src={pair.after}
@@ -973,9 +1049,12 @@ export default function Home() {
                               </div>
                               <div className="aspect-square rounded-lg overflow-hidden border-2 border-cyan-500">
                                 <img
-                                  src={generatedImageUrl}
+                                  src={watermarkedPreview || generatedImageUrl}
                                   alt="Enhanced"
                                   className="w-full h-full object-cover"
+                                  style={{ pointerEvents: 'none', userSelect: 'none' }}
+                                  onContextMenu={(e) => e.preventDefault()}
+                                  draggable="false"
                                 />
                               </div>
                             </div>
@@ -1820,7 +1899,7 @@ export default function Home() {
           <div className="max-w-4xl mx-auto px-6 py-12">
             <div className="text-center mb-12">
               <h1 className="text-5xl font-bold text-white mb-4">
-                About <span className="bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">AI Image Studio</span>
+                About <span className="bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">Better Selfie</span>
               </h1>
               <p className="text-lg text-slate-300">Transforming your photos with cutting-edge AI technology</p>
             </div>
@@ -1829,7 +1908,7 @@ export default function Home() {
               <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-8 border border-slate-700/50">
                 <h2 className="text-2xl font-bold text-white mb-4">Our Mission</h2>
                 <p className="text-slate-300 leading-relaxed">
-                  At AI Image Studio, we believe everyone deserves to present their best self online. Our advanced AI technology enhances your photos while maintaining their natural authenticity, helping you stand out on dating apps and social media.
+                  At Better Selfie, we believe everyone deserves to present their best self online. Our advanced AI technology enhances your photos while maintaining their natural authenticity, helping you elevate your social media presence and make a lasting impression.
                 </p>
               </div>
 
@@ -2370,7 +2449,7 @@ export default function Home() {
       {/* Footer */}
       <footer className="w-full py-6 px-6 bg-slate-950/50 border-t border-slate-700/50">
         <div className="max-w-7xl mx-auto text-center text-sm text-slate-400">
-          <p>© 2024 AI Image Studio. Powered by advanced machine learning.</p>
+          <p>© 2024 Better Selfie. Powered by advanced machine learning.</p>
         </div>
       </footer>
     </div>
