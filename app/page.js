@@ -31,6 +31,7 @@ export default function Home() {
   const [isEditingAccount, setIsEditingAccount] = useState(false);
   const [editUsername, setEditUsername] = useState('');
   const [editEmail, setEditEmail] = useState('');
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   // Check for stored token and page on mount
   useEffect(() => {
@@ -171,19 +172,19 @@ export default function Home() {
 
   const beforeAfterPairs = [
     {
-      before: 'https://images.pexels.com/photos/1105666/pexels-photo-1105666.jpeg?auto=compress&cs=tinysrgb&w=400',
-      after: 'https://images.pexels.com/photos/1166644/pexels-photo-1166644.jpeg?auto=compress&cs=tinysrgb&w=400',
-      label: 'Style Transfer'
+      before: './Morgan.jpg',
+      after: './Morgan2.png',
+      label: 'Enhancement'
     },
     {
-      before: 'https://images.pexels.com/photos/1049298/pexels-photo-1049298.jpeg?auto=compress&cs=tinysrgb&w=400',
-      after: 'https://images.pexels.com/photos/1591373/pexels-photo-1591373.jpeg?auto=compress&cs=tinysrgb&w=400',
+      before: './before1.png',
+      after: './after1.png',
       label: 'Enhancement'
     },
     {
       before: 'https://images.pexels.com/photos/1183099/pexels-photo-1183099.jpeg?auto=compress&cs=tinysrgb&w=400',
       after: 'https://images.pexels.com/photos/1758144/pexels-photo-1758144.jpeg?auto=compress&cs=tinysrgb&w=400',
-      label: 'Transformation'
+      label: 'Enhancement'
     }
   ];
 
@@ -520,6 +521,13 @@ export default function Home() {
             <span className="font-semibold text-white">AI Image Studio</span>
           </button>
           <nav className="flex gap-6 text-sm text-slate-400 items-center">
+            {isLoggedIn && (
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-800/50 border border-cyan-500/30 rounded-lg">
+                <Sparkles className="w-4 h-4 text-cyan-400" />
+                <span className="text-white font-semibold">{userData?.credits || 0}</span>
+                <span className="text-slate-400 text-xs">credits</span>
+              </div>
+            )}
             <button onClick={() => setCurrentPage('pricing')} className="hover:text-cyan-400 transition-colors">Pricing</button>
             <button onClick={() => setCurrentPage('about')} className="hover:text-cyan-400 transition-colors">About</button>
             {!isLoggedIn ? (
@@ -574,9 +582,78 @@ export default function Home() {
             </p>
           </div>
 
-          {/* Overlapping Polaroid Style Images Grid */}
+          {/* Overlapping Polaroid Style Images - Carousel on Mobile, Grid on Desktop */}
           <div className="mb-16">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12 max-w-6xl mx-auto">
+            {/* Mobile Carousel */}
+            <div className="md:hidden relative">
+              <div className="flex justify-center items-center min-h-[320px]">
+                <div className="relative w-full max-w-xs h-80">
+                  {/* Before Polaroid - Rotated Left */}
+                  <div className="absolute left-0 top-0 w-56 h-80 bg-white p-3 pb-14 shadow-2xl rotate-[-8deg] transition-all duration-300">
+                    <div className="relative w-full h-52 overflow-hidden bg-slate-300">
+                      <img
+                        src={beforeAfterPairs[currentImageIndex].before}
+                        alt="Before"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <div className="mt-3 text-center">
+                      <p className="text-xs font-handwriting text-slate-800">BEFORE</p>
+                      <p className="text-xs font-semibold text-slate-600 mt-1">{beforeAfterPairs[currentImageIndex].label}</p>
+                    </div>
+                  </div>
+
+                  {/* After Polaroid - Rotated Right */}
+                  <div className="absolute right-0 top-6 w-56 h-80 bg-white p-3 pb-14 shadow-2xl rotate-[6deg] transition-all duration-300">
+                    <div className="relative w-full h-52 overflow-hidden bg-slate-300">
+                      <img
+                        src={beforeAfterPairs[currentImageIndex].after}
+                        alt="After"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <div className="mt-3 text-center">
+                      <p className="text-xs font-handwriting text-slate-800">AFTER</p>
+                      <p className="text-xs font-semibold text-slate-600 mt-1">Enhanced</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Carousel Navigation */}
+              <div className="flex justify-center items-center gap-4 mt-6">
+                <button
+                  onClick={() => setCurrentImageIndex((prev) => (prev === 0 ? beforeAfterPairs.length - 1 : prev - 1))}
+                  className="p-2 bg-slate-700 hover:bg-slate-600 rounded-full transition-colors"
+                >
+                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                </button>
+                <div className="flex gap-2">
+                  {beforeAfterPairs.map((_, index) => (
+                    <button
+                      key={index}
+                      onClick={() => setCurrentImageIndex(index)}
+                      className={`w-2 h-2 rounded-full transition-all ${
+                        index === currentImageIndex ? 'bg-cyan-500 w-6' : 'bg-slate-600'
+                      }`}
+                    />
+                  ))}
+                </div>
+                <button
+                  onClick={() => setCurrentImageIndex((prev) => (prev === beforeAfterPairs.length - 1 ? 0 : prev + 1))}
+                  className="p-2 bg-slate-700 hover:bg-slate-600 rounded-full transition-colors"
+                >
+                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            {/* Desktop Grid */}
+            <div className="hidden md:grid grid-cols-2 lg:grid-cols-3 gap-12 max-w-6xl mx-auto">
               {beforeAfterPairs.map((pair, index) => (
                 <div key={index} className="flex justify-center items-center">
                   <div className="relative w-full max-w-xs h-80">
@@ -1005,10 +1082,10 @@ export default function Home() {
               <p className="text-slate-400">See the amazing transformations our users have achieved</p>
             </div>
             
-            {/* Flex Masonry Layout - Three columns with custom height distribution */}
-            <div className="flex gap-6 max-w-6xl mx-auto justify-center">
+            {/* Flex Masonry Layout - Single column on mobile, three columns on desktop */}
+            <div className="flex flex-col md:flex-row gap-6 max-w-6xl mx-auto justify-center px-4">
               {/* Column 1: Small, Large, Medium, Small */}
-              <div className="flex flex-col gap-6 w-full md:w-[calc(50%-12px)] lg:w-[calc(33.333%-16px)]">
+              <div className="flex flex-col gap-6 w-full lg:w-[calc(33.333%-16px)]">
                 {/* Card 1 - Small (h-72) */}
                 <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl overflow-hidden border border-slate-700/50 hover:border-cyan-500/50 transition-colors duration-300 flex flex-col h-72">
                   <div className="h-40 bg-gradient-to-br from-cyan-500 to-blue-600 relative overflow-hidden flex-shrink-0">
@@ -1067,7 +1144,7 @@ export default function Home() {
               </div>
 
               {/* Column 2: Large, Small, Small, Medium */}
-              <div className="flex flex-col gap-6 w-full md:w-[calc(50%-12px)] lg:w-[calc(33.333%-16px)]">
+              <div className="hidden md:flex flex-col gap-6 w-full lg:w-[calc(33.333%-16px)]">
                 {/* Card 5 - Large (h-96) */}
                 <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl overflow-hidden border border-slate-700/50 hover:border-cyan-500/50 transition-colors duration-300 flex flex-col h-96">
                   <div className="h-56 bg-gradient-to-br from-pink-500 to-rose-600 relative overflow-hidden flex-shrink-0">
@@ -1126,7 +1203,7 @@ export default function Home() {
               </div>
 
               {/* Column 3: Medium, Small, Large, Small */}
-              <div className="flex flex-col gap-6 w-full md:w-[calc(50%-12px)] lg:w-[calc(33.333%-16px)]">
+              <div className="hidden lg:flex flex-col gap-6 w-full lg:w-[calc(33.333%-16px)]">
                 {/* Card 9 - Medium (h-80) */}
                 <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl overflow-hidden border border-slate-700/50 hover:border-cyan-500/50 transition-colors duration-300 flex flex-col h-80">
                   <div className="h-48 bg-gradient-to-br from-violet-500 to-purple-600 relative overflow-hidden flex-shrink-0">

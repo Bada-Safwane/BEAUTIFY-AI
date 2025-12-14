@@ -5,7 +5,7 @@ export async function POST(request) {
   try {
     const formData = await request.formData();
     const file = formData.get('file');
-    const prompt = formData.get('prompt') || 'make him look handsome without changing too much of his attributes';
+    const prompt = formData.get('prompt') || 'enhance this photo with professional lighting and subtle improvements to make them more attractive for dating profile while keeping their natural features';
 
 
     if (!file) {
