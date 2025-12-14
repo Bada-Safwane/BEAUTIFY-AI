@@ -1,6 +1,14 @@
 import { GoogleGenAI } from "@google/genai";
 import { uploadToS3 } from "@/app/utils/utils";
 
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: '10mb',
+    },
+  },
+};
+
 export async function POST(request) {
   try {
     const formData = await request.formData();

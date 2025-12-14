@@ -195,7 +195,7 @@ export default function Home() {
     }
   ];
 
-  const compressImage = (file, maxSizeMB = 2) => {
+  const compressImage = (file, maxSizeMB = 1) => {
     return new Promise((resolve) => {
       const reader = new FileReader();
       reader.onload = (e) => {
@@ -205,8 +205,8 @@ export default function Home() {
           let width = img.width;
           let height = img.height;
           
-          // Calculate new dimensions - more aggressive resize
-          const maxDimension = 1536;
+          // Calculate new dimensions - very aggressive resize
+          const maxDimension = 1024;
           if (width > maxDimension || height > maxDimension) {
             if (width > height) {
               height = (height / width) * maxDimension;
@@ -223,12 +223,12 @@ export default function Home() {
           const ctx = canvas.getContext('2d');
           ctx.drawImage(img, 0, 0, width, height);
           
-          // Start with quality 0.8 and reduce if needed
-          let quality = 0.8;
+          // Start with quality 0.7 and reduce if needed
+          let quality = 0.7;
           const compress = () => {
             canvas.toBlob((blob) => {
               const sizeMB = blob.size / (1024 * 1024);
-              if (sizeMB > maxSizeMB && quality > 0.3) {
+              if (sizeMB > maxSizeMB && quality > 0.2) {
                 quality -= 0.1;
                 compress();
               } else {
@@ -378,14 +378,17 @@ export default function Home() {
         'premium': '10-pack'
       };
 
+      // Determine context: if there's a generated image, it's from download flow, otherwise pricing page
+      const context = generatedImageUrl ? 'download' : 'pricing';
+
       const response = await fetch('/api/stripe/checkout', {
         method: 'POST',
         headers,
         body: JSON.stringify({
           plan: planMap[selectedPlan],
           email: userEmail,
-          imageUrl: generatedImageUrl,
-          context: 'download' // This is from the download button flow
+          imageUrl: generatedImageUrl || '',
+          context: context
         }),
       });
 
@@ -419,52 +422,18 @@ export default function Home() {
   };
 
   const handlePricingPagePurchase = async (plan) => {
-    // Require login for all pricing page purchases
+    // Set the selected plan first
+    setSelectedPlan(plan);
+    
+    // If user is not logged in, show auth popup
     if (!isLoggedIn) {
-      setCurrentPage('login');
-      setError('Please login or sign up to purchase credits');
+      setShowAuthPopup(true);
+      setAuthMode('login');
       return;
     }
 
-    try {
-      const headers = {
-        'Content-Type': 'application/json',
-      };
-      
-      if (authToken) {
-        headers['Authorization'] = `Bearer ${authToken}`;
-      }
-
-      // Map frontend plan names to backend plan names
-      const planMap = {
-        'single': 'single',
-        'triple': '3-pack',
-        'premium': '10-pack'
-      };
-
-      const response = await fetch('/api/stripe/checkout', {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          plan: planMap[plan],
-          email: userData?.email || '',
-          imageUrl: '',
-          context: 'pricing' // This is from the pricing page
-        }),
-      });
-
-      const data = await response.json();
-
-      if (data.success && data.url) {
-        // Redirect to Stripe checkout
-        window.location.href = data.url;
-      } else {
-        setError('Failed to create checkout session');
-      }
-    } catch (err) {
-      console.error('Checkout error:', err);
-      setError('Failed to proceed to payment');
-    }
+    // User is logged in, proceed to checkout
+    await proceedToCheckout(userData?.email);
   };
 
   const handleAuthenticatedDownload = async () => {
@@ -998,48 +967,48 @@ export default function Home() {
           {/* Pricing Popup */}
           {showPricingPopup && (
             <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-              <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-3xl p-8 border border-cyan-500/30 shadow-2xl max-w-2xl w-full relative">
+              <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-3xl p-4 md:p-8 border border-cyan-500/30 shadow-2xl max-w-4xl w-full relative max-h-[90vh] overflow-y-auto">
                 <button
                   onClick={() => setShowPricingPopup(false)}
-                  className="absolute top-4 right-4 p-2 bg-slate-700 hover:bg-slate-600 text-white rounded-full shadow-lg transition-colors duration-200"
+                  className="absolute top-4 right-4 p-2 bg-slate-700 hover:bg-slate-600 text-white rounded-full shadow-lg transition-colors duration-200 z-10"
                 >
                   <X className="w-5 h-5" />
                 </button>
                 
-                <div className="text-center mb-8">
-                  <h3 className="text-3xl font-bold text-white mb-2">
+                <div className="text-center mb-6 md:mb-8">
+                  <h3 className="text-2xl md:text-3xl font-bold text-white mb-2">
                     Choose Your Plan
                   </h3>
-                  <p className="text-slate-300">
+                  <p className="text-sm md:text-base text-slate-300">
                     Select the perfect plan for your needs
                   </p>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mb-6 md:mb-8">
                   {/* Single Image Plan */}
                   <div 
                     onClick={() => setSelectedPlan('single')}
-                    className={`bg-slate-800/50 rounded-2xl p-6 border-2 transition-all cursor-pointer hover:scale-105 ${
-                      selectedPlan === 'single' ? 'border-cyan-500 shadow-cyan-500/20' : 'border-slate-700/50'
+                    className={`bg-slate-800/50 rounded-2xl p-4 md:p-6 border-2 transition-all cursor-pointer active:scale-95 md:hover:scale-105 ${
+                      selectedPlan === 'single' ? 'border-cyan-500 shadow-lg shadow-cyan-500/20' : 'border-slate-700/50'
                     }`}
                   >
                     <div className="text-center">
-                      <p className="text-slate-400 text-sm uppercase tracking-widest mb-2">Single Image</p>
-                      <div className="mb-4">
-                        <span className="text-4xl font-bold text-white">€3.99</span>
+                      <p className="text-slate-400 text-xs md:text-sm uppercase tracking-widest mb-2">Single Image</p>
+                      <div className="mb-3 md:mb-4">
+                        <span className="text-3xl md:text-4xl font-bold text-white">€3.99</span>
                       </div>
-                      <ul className="text-left space-y-2 text-slate-300 text-sm">
+                      <ul className="text-left space-y-1.5 md:space-y-2 text-slate-300 text-xs md:text-sm">
                         <li className="flex items-center gap-2">
                           <span className="text-cyan-400">✓</span>
                           1 Image Credit
                         </li>
                         <li className="flex items-center gap-2">
                           <span className="text-cyan-400">✓</span>
-                          AI-Powered Enhancement
+                          AI Enhancement
                         </li>
                         <li className="flex items-center gap-2">
                           <span className="text-cyan-400">✓</span>
-                          High-Quality Results
+                          High Quality
                         </li>
                       </ul>
                     </div>
@@ -1048,26 +1017,26 @@ export default function Home() {
                   {/* 3 Images Plan */}
                   <div 
                     onClick={() => setSelectedPlan('triple')}
-                    className={`bg-slate-800/50 rounded-2xl p-6 border-2 transition-all cursor-pointer hover:scale-105 relative ${
-                      selectedPlan === 'triple' ? 'border-cyan-500 shadow-cyan-500/20' : 'border-slate-700/50'
+                    className={`bg-slate-800/50 rounded-2xl p-4 md:p-6 border-2 transition-all cursor-pointer active:scale-95 md:hover:scale-105 relative ${
+                      selectedPlan === 'triple' ? 'border-cyan-500 shadow-lg shadow-cyan-500/20' : 'border-slate-700/50'
                     }`}
                   >
-                    <div className="absolute -top-3 right-4 bg-gradient-to-r from-cyan-500 to-blue-600 text-white text-xs font-bold px-3 py-1 rounded-full">
+                    <div className="absolute -top-2 right-2 md:-top-3 md:right-4 bg-gradient-to-r from-cyan-500 to-blue-600 text-white text-[10px] md:text-xs font-bold px-2 md:px-3 py-0.5 md:py-1 rounded-full">
                       POPULAR
                     </div>
                     <div className="text-center">
-                      <p className="text-slate-400 text-sm uppercase tracking-widest mb-2">3 Images Bundle</p>
-                      <div className="mb-4">
-                        <span className="text-4xl font-bold text-white">€9.99</span>
+                      <p className="text-slate-400 text-xs md:text-sm uppercase tracking-widest mb-2">3 Images Bundle</p>
+                      <div className="mb-3 md:mb-4">
+                        <span className="text-3xl md:text-4xl font-bold text-white">€9.99</span>
                       </div>
-                      <ul className="text-left space-y-2 text-slate-300 text-sm">
+                      <ul className="text-left space-y-1.5 md:space-y-2 text-slate-300 text-xs md:text-sm">
                         <li className="flex items-center gap-2">
                           <span className="text-cyan-400">✓</span>
                           3 Image Credits
                         </li>
                         <li className="flex items-center gap-2">
                           <span className="text-cyan-400">✓</span>
-                          AI-Powered Enhancement
+                          AI Enhancement
                         </li>
                         <li className="flex items-center gap-2">
                           <span className="text-cyan-400">✓</span>
@@ -1080,26 +1049,26 @@ export default function Home() {
                   {/* 10 Images Plan */}
                   <div 
                     onClick={() => setSelectedPlan('premium')}
-                    className={`bg-slate-800/50 rounded-2xl p-6 border-2 transition-all cursor-pointer hover:scale-105 relative ${
-                      selectedPlan === 'premium' ? 'border-cyan-500 shadow-cyan-500/20' : 'border-slate-700/50'
+                    className={`bg-slate-800/50 rounded-2xl p-4 md:p-6 border-2 transition-all cursor-pointer active:scale-95 md:hover:scale-105 relative ${
+                      selectedPlan === 'premium' ? 'border-cyan-500 shadow-lg shadow-cyan-500/20' : 'border-slate-700/50'
                     }`}
                   >
-                    <div className="absolute -top-3 right-4 bg-gradient-to-r from-cyan-500 to-blue-600 text-white text-xs font-bold px-3 py-1 rounded-full">
+                    <div className="absolute -top-2 right-2 md:-top-3 md:right-4 bg-gradient-to-r from-cyan-500 to-blue-600 text-white text-[10px] md:text-xs font-bold px-2 md:px-3 py-0.5 md:py-1 rounded-full">
                       BEST VALUE
                     </div>
                     <div className="text-center">
-                      <p className="text-slate-400 text-sm uppercase tracking-widest mb-2">10 Images Bundle</p>
-                      <div className="mb-4">
-                        <span className="text-4xl font-bold text-white">€25.00</span>
+                      <p className="text-slate-400 text-xs md:text-sm uppercase tracking-widest mb-2">10 Images Bundle</p>
+                      <div className="mb-3 md:mb-4">
+                        <span className="text-3xl md:text-4xl font-bold text-white">€25.00</span>
                       </div>
-                      <ul className="text-left space-y-2 text-slate-300 text-sm">
+                      <ul className="text-left space-y-1.5 md:space-y-2 text-slate-300 text-xs md:text-sm">
                         <li className="flex items-center gap-2">
                           <span className="text-cyan-400">✓</span>
                           10 Image Credits
                         </li>
                         <li className="flex items-center gap-2">
                           <span className="text-cyan-400">✓</span>
-                          AI-Powered Enhancement
+                          AI Enhancement
                         </li>
                         <li className="flex items-center gap-2">
                           <span className="text-cyan-400">✓</span>
