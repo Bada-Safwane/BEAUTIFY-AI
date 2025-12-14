@@ -195,17 +195,72 @@ export default function Home() {
     }
   ];
 
-  const handleFileChange = (e) => {
+  const compressImage = (file, maxSizeMB = 5) => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+          
+          // Calculate new dimensions if image is too large
+          const maxDimension = 2048;
+          if (width > maxDimension || height > maxDimension) {
+            if (width > height) {
+              height = (height / width) * maxDimension;
+              width = maxDimension;
+            } else {
+              width = (width / height) * maxDimension;
+              height = maxDimension;
+            }
+          }
+          
+          canvas.width = width;
+          canvas.height = height;
+          
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+          
+          // Start with quality 0.9 and reduce if needed
+          let quality = 0.9;
+          const compress = () => {
+            canvas.toBlob((blob) => {
+              const sizeMB = blob.size / (1024 * 1024);
+              if (sizeMB > maxSizeMB && quality > 0.3) {
+                quality -= 0.1;
+                compress();
+              } else {
+                const compressedFile = new File([blob], file.name, {
+                  type: 'image/jpeg',
+                  lastModified: Date.now()
+                });
+                resolve(compressedFile);
+              }
+            }, 'image/jpeg', quality);
+          };
+          compress();
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleFileChange = async (e) => {
     const file = e.target.files?.[0];
     if (file) {
-      setSelectedFile(file);
+      // Compress image if it's too large
+      const compressedFile = await compressImage(file);
+      setSelectedFile(compressedFile);
       setGeneratedImageUrl(null);
       setShowDownload(false);
       const reader = new FileReader();
       reader.onloadend = () => {
         setImagePreview(reader.result);
       };
-      reader.readAsDataURL(file);
+      reader.readAsDataURL(compressedFile);
     }
   };
 
@@ -219,17 +274,19 @@ export default function Home() {
     setIsDragging(false);
   };
 
-  const handleDrop = (e) => {
+  const handleDrop = async (e) => {
     e.preventDefault();
     setIsDragging(false);
     const file = e.dataTransfer.files?.[0];
     if (file && file.type.startsWith('image/')) {
-      setSelectedFile(file);
+      // Compress image if it's too large
+      const compressedFile = await compressImage(file);
+      setSelectedFile(compressedFile);
       const reader = new FileReader();
       reader.onloadend = () => {
         setImagePreview(reader.result);
       };
-      reader.readAsDataURL(file);
+      reader.readAsDataURL(compressedFile);
     }
   };
 
