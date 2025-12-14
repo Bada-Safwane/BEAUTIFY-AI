@@ -1592,9 +1592,9 @@ export default function Home() {
                 {/* Card 1 - Small (h-72) */}
                 <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl overflow-hidden border border-slate-700/50 hover:border-cyan-500/50 transition-colors duration-300 flex flex-col h-72">
                   <div className="h-40 bg-gradient-to-br from-cyan-500 to-blue-600 relative overflow-hidden flex-shrink-0">
-                    <img src="https://i.pravatar.cc/400?img=1" alt="Before" className="w-full h-full object-cover" />
+                    <img src="https://xsgames.co/randomusers/avatar.php?g=female&random=1" alt="Before" className="w-full h-full object-cover" />
                     <div className="absolute inset-0 bg-black/20 flex items-end p-4">
-                      <div><p className="text-white font-semibold">Sarah M.</p><p className="text-cyan-200 text-sm">3 matches in 24h</p></div>
+                      <div><p className="text-white font-semibold">Sarah M.</p></div>
                     </div>
                   </div>
                   <div className="p-4 flex-grow flex flex-col justify-between">
@@ -1606,9 +1606,9 @@ export default function Home() {
                 {/* Card 2 - Large (h-96) */}
                 <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl overflow-hidden border border-slate-700/50 hover:border-cyan-500/50 transition-colors duration-300 flex flex-col h-96">
                   <div className="h-56 bg-gradient-to-br from-orange-500 to-red-600 relative overflow-hidden flex-shrink-0">
-                    <img src="https://i.pravatar.cc/400?img=12" alt="Amazing" className="w-full h-full object-cover" />
+                    <img src="https://xsgames.co/randomusers/avatar.php?g=male&random=2" alt="Amazing" className="w-full h-full object-cover" />
                     <div className="absolute inset-0 bg-black/20 flex items-end p-4">
-                      <div><p className="text-white font-semibold">David M.</p><p className="text-orange-200 text-sm">Real conversations</p></div>
+                      <div><p className="text-white font-semibold">David M.</p></div>
                     </div>
                   </div>
                   <div className="p-4 flex-grow flex flex-col justify-between">
@@ -1620,9 +1620,9 @@ export default function Home() {
                 {/* Card 3 - Medium (h-80) */}
                 <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl overflow-hidden border border-slate-700/50 hover:border-cyan-500/50 transition-colors duration-300 flex flex-col h-80">
                   <div className="h-48 bg-gradient-to-br from-purple-500 to-indigo-600 relative overflow-hidden flex-shrink-0">
-                    <img src="https://i.pravatar.cc/400?img=5" alt="Success" className="w-full h-full object-cover" />
+                    <img src="https://xsgames.co/randomusers/avatar.php?g=female&random=3" alt="Success" className="w-full h-full object-cover" />
                     <div className="absolute inset-0 bg-black/20 flex items-end p-4">
-                      <div><p className="text-white font-semibold">Jessica K.</p><p className="text-purple-200 text-sm">7 conversations</p></div>
+                      <div><p className="text-white font-semibold">Jessica K.</p></div>
                     </div>
                   </div>
                   <div className="p-4 flex-grow flex flex-col justify-between">
@@ -1634,9 +1634,9 @@ export default function Home() {
                 {/* Card 4 - Small (h-72) */}
                 <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl overflow-hidden border border-slate-700/50 hover:border-cyan-500/50 transition-colors duration-300 flex flex-col h-72">
                   <div className="h-40 bg-gradient-to-br from-emerald-500 to-teal-600 relative overflow-hidden flex-shrink-0">
-                    <img src="https://i.pravatar.cc/400?img=13" alt="Result" className="w-full h-full object-cover" />
+                    <img src="https://xsgames.co/randomusers/avatar.php?g=male&random=4" alt="Result" className="w-full h-full object-cover" />
                     <div className="absolute inset-0 bg-black/20 flex items-end p-4">
-                      <div><p className="text-white font-semibold">Marcus L.</p><p className="text-teal-200 text-sm">6 matches</p></div>
+                      <div><p className="text-white font-semibold">Marcus L.</p></div>
                     </div>
                   </div>
                   <div className="p-4 flex-grow flex flex-col justify-between">
@@ -1651,9 +1651,9 @@ export default function Home() {
                 {/* Card 5 - Large (h-96) */}
                 <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl overflow-hidden border border-slate-700/50 hover:border-cyan-500/50 transition-colors duration-300 flex flex-col h-96">
                   <div className="h-56 bg-gradient-to-br from-pink-500 to-rose-600 relative overflow-hidden flex-shrink-0">
-                    <img src="https://i.pravatar.cc/400?img=9" alt="Transformed" className="w-full h-full object-cover" />
+                    <img src="https://xsgames.co/randomusers/avatar.php?g=female&random=5" alt="Transformed" className="w-full h-full object-cover" />
                     <div className="absolute inset-0 bg-black/20 flex items-end p-4">
-                      <div><p className="text-white font-semibold">Emma L.</p><p className="text-pink-200 text-sm">5 matches today</p></div>
+                      <div><p className="text-white font-semibold">Emma L.</p></div>
                     </div>
                   </div>
                   <div className="p-4 flex-grow flex flex-col justify-between">
@@ -1665,9 +1665,9 @@ export default function Home() {
                 {/* Card 6 - Small (h-72) */}
                 <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl overflow-hidden border border-slate-700/50 hover:border-cyan-500/50 transition-colors duration-300 flex flex-col h-72">
                   <div className="h-40 bg-gradient-to-br from-yellow-500 to-amber-600 relative overflow-hidden flex-shrink-0">
-                    <img src="https://i.pravatar.cc/400?img=15" alt="Incredible" className="w-full h-full object-cover" />
+                    <img src="https://xsgames.co/randomusers/avatar.php?g=male&random=6" alt="Incredible" className="w-full h-full object-cover" />
                     <div className="absolute inset-0 bg-black/20 flex items-end p-4">
-                      <div><p className="text-white font-semibold">Chris P.</p><p className="text-yellow-200 text-sm">8 matches in 2 days</p></div>
+                      <div><p className="text-white font-semibold">Chris P.</p></div>
                     </div>
                   </div>
                   <div className="p-4 flex-grow flex flex-col justify-between">
@@ -1679,9 +1679,9 @@ export default function Home() {
                 {/* Card 7 - Small (h-72) */}
                 <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl overflow-hidden border border-slate-700/50 hover:border-cyan-500/50 transition-colors duration-300 flex flex-col h-72">
                   <div className="h-40 bg-gradient-to-br from-red-500 to-pink-600 relative overflow-hidden flex-shrink-0">
-                    <img src="https://i.pravatar.cc/400?img=20" alt="Stunning" className="w-full h-full object-cover" />
+                    <img src="https://xsgames.co/randomusers/avatar.php?g=female&random=7" alt="Stunning" className="w-full h-full object-cover" />
                     <div className="absolute inset-0 bg-black/20 flex items-end p-4">
-                      <div><p className="text-white font-semibold">Taylor R.</p><p className="text-pink-200 text-sm">4 new matches</p></div>
+                      <div><p className="text-white font-semibold">Taylor R.</p></div>
                     </div>
                   </div>
                   <div className="p-4 flex-grow flex flex-col justify-between">
@@ -1693,9 +1693,9 @@ export default function Home() {
                 {/* Card 8 - Medium (h-80) */}
                 <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl overflow-hidden border border-slate-700/50 hover:border-cyan-500/50 transition-colors duration-300 flex flex-col h-80">
                   <div className="h-48 bg-gradient-to-br from-blue-500 to-cyan-600 relative overflow-hidden flex-shrink-0">
-                    <img src="https://i.pravatar.cc/400?img=33" alt="Success" className="w-full h-full object-cover" />
+                    <img src="https://xsgames.co/randomusers/avatar.php?g=male&random=8" alt="Success" className="w-full h-full object-cover" />
                     <div className="absolute inset-0 bg-black/20 flex items-end p-4">
-                      <div><p className="text-white font-semibold">Jordan K.</p><p className="text-cyan-200 text-sm">9 conversations</p></div>
+                      <div><p className="text-white font-semibold">Jordan K.</p></div>
                     </div>
                   </div>
                   <div className="p-4 flex-grow flex flex-col justify-between">
@@ -1710,9 +1710,9 @@ export default function Home() {
                 {/* Card 9 - Medium (h-80) */}
                 <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl overflow-hidden border border-slate-700/50 hover:border-cyan-500/50 transition-colors duration-300 flex flex-col h-80">
                   <div className="h-48 bg-gradient-to-br from-violet-500 to-purple-600 relative overflow-hidden flex-shrink-0">
-                    <img src="https://i.pravatar.cc/400?img=47" alt="Stunning" className="w-full h-full object-cover" />
+                    <img src="https://xsgames.co/randomusers/avatar.php?g=male&random=9" alt="Stunning" className="w-full h-full object-cover" />
                     <div className="absolute inset-0 bg-black/20 flex items-end p-4">
-                      <div><p className="text-white font-semibold">Alex T.</p><p className="text-violet-200 text-sm">10 new matches</p></div>
+                      <div><p className="text-white font-semibold">Alex T.</p></div>
                     </div>
                   </div>
                   <div className="p-4 flex-grow flex flex-col justify-between">
@@ -1724,9 +1724,9 @@ export default function Home() {
                 {/* Card 10 - Small (h-72) */}
                 <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl overflow-hidden border border-slate-700/50 hover:border-cyan-500/50 transition-colors duration-300 flex flex-col h-72">
                   <div className="h-40 bg-gradient-to-br from-indigo-500 to-blue-600 relative overflow-hidden flex-shrink-0">
-                    <img src="https://i.pravatar.cc/400?img=51" alt="Result" className="w-full h-full object-cover" />
+                    <img src="https://xsgames.co/randomusers/avatar.php?g=female&random=10" alt="Result" className="w-full h-full object-cover" />
                     <div className="absolute inset-0 bg-black/20 flex items-end p-4">
-                      <div><p className="text-white font-semibold">Morgan R.</p><p className="text-indigo-200 text-sm">5 matches</p></div>
+                      <div><p className="text-white font-semibold">Morgan R.</p></div>
                     </div>
                   </div>
                   <div className="p-4 flex-grow flex flex-col justify-between">
@@ -1738,9 +1738,9 @@ export default function Home() {
                 {/* Card 11 - Large (h-96) */}
                 <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl overflow-hidden border border-slate-700/50 hover:border-cyan-500/50 transition-colors duration-300 flex flex-col h-96">
                   <div className="h-56 bg-gradient-to-br from-lime-500 to-green-600 relative overflow-hidden flex-shrink-0">
-                    <img src="https://i.pravatar.cc/400?img=26" alt="Success" className="w-full h-full object-cover" />
+                    <img src="https://xsgames.co/randomusers/avatar.php?g=male&random=11" alt="Success" className="w-full h-full object-cover" />
                     <div className="absolute inset-0 bg-black/20 flex items-end p-4">
-                      <div><p className="text-white font-semibold">Casey S.</p><p className="text-green-200 text-sm">11 matches</p></div>
+                      <div><p className="text-white font-semibold">Casey S.</p></div>
                     </div>
                   </div>
                   <div className="p-4 flex-grow flex flex-col justify-between">
@@ -1752,9 +1752,9 @@ export default function Home() {
                 {/* Card 12 - Small (h-72) */}
                 <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl overflow-hidden border border-slate-700/50 hover:border-cyan-500/50 transition-colors duration-300 flex flex-col h-72">
                   <div className="h-40 bg-gradient-to-br from-rose-500 to-red-600 relative overflow-hidden flex-shrink-0">
-                    <img src="https://i.pravatar.cc/400?img=32" alt="Amazing" className="w-full h-full object-cover" />
+                    <img src="https://xsgames.co/randomusers/avatar.php?g=female&random=12" alt="Amazing" className="w-full h-full object-cover" />
                     <div className="absolute inset-0 bg-black/20 flex items-end p-4">
-                      <div><p className="text-white font-semibold">Riley P.</p><p className="text-rose-200 text-sm">7 matches</p></div>
+                      <div><p className="text-white font-semibold">Riley P.</p></div>
                     </div>
                   </div>
                   <div className="p-4 flex-grow flex flex-col justify-between">
