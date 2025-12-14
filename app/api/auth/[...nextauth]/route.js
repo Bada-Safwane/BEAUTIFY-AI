@@ -1,8 +1,10 @@
 import NextAuth from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import { MongoClient } from 'mongodb';
+import jwt from 'jsonwebtoken';
 
 const uri = process.env.MONGODB_URI;
+const SECRET = process.env.SECRET;
 
 const handler = NextAuth({
   providers: [
@@ -74,7 +76,7 @@ const handler = NextAuth({
             }
           }
 
-          return `/api/auth/google-callback?email=${encodeURIComponent(user.email)}`;
+          return true;
         } catch (error) {
           console.error('Google sign in error:', error);
           return false;
@@ -86,8 +88,12 @@ const handler = NextAuth({
       }
       return true;
     },
-    async session({ session, token }) {
-      if (session?.user?.email) {
+    async redirect({ url, baseUrl }) {
+      // Redirect to home page after sign in
+      return baseUrl;
+    },
+    async jwt({ token, user, account }) {
+      if (account?.provider === "google" && user) {
         let client;
         try {
           client = new MongoClient(uri);
@@ -96,20 +102,37 @@ const handler = NextAuth({
           const database = client.db('GeminiDB');
           const users = database.collection('users');
 
-          const user = await users.findOne({ email: session.user.email });
+          const dbUser = await users.findOne({ email: user.email });
           
-          if (user) {
-            session.user.id = user._id.toString();
-            session.user.credits = user.credits;
-            session.user.username = user.username;
+          if (dbUser) {
+            // Generate our custom JWT token
+            const customToken = jwt.sign(
+              { userId: dbUser._id, username: dbUser.username, email: dbUser.email },
+              SECRET,
+              { expiresIn: '7d' }
+            );
+            
+            token.customToken = customToken;
+            token.userId = dbUser._id.toString();
+            token.credits = dbUser.credits;
+            token.username = dbUser.username;
           }
         } catch (error) {
-          console.error('Session error:', error);
+          console.error('JWT callback error:', error);
         } finally {
           if (client) {
             await client.close();
           }
         }
+      }
+      return token;
+    },
+    async session({ session, token }) {
+      if (token.customToken) {
+        session.customToken = token.customToken;
+        session.user.id = token.userId;
+        session.user.credits = token.credits;
+        session.user.username = token.username;
       }
       return session;
     },

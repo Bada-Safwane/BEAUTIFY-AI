@@ -1,10 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSession, signIn } from 'next-auth/react';
 import { Upload, Sparkles, Image as ImageIcon, X, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 export default function Home() {
+  const { data: session } = useSession();
   const [selectedFile, setSelectedFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -36,25 +38,35 @@ export default function Home() {
   const [editEmail, setEditEmail] = useState('');
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
+  // Handle NextAuth Google session
+  useEffect(() => {
+    if (session?.customToken) {
+      // Store the custom JWT token from Google OAuth
+      localStorage.setItem('authToken', session.customToken);
+      setAuthToken(session.customToken);
+      setIsLoggedIn(true);
+      setUserData({
+        id: session.user.id,
+        username: session.user.username,
+        email: session.user.email,
+        credits: session.user.credits
+      });
+      
+      // Close auth popup if open
+      setShowAuthPopup(false);
+      
+      // If we were in payment flow, proceed to checkout
+      const pendingPayment = sessionStorage.getItem('pendingPaymentPlan');
+      if (pendingPayment) {
+        const plan = pendingPayment;
+        sessionStorage.removeItem('pendingPaymentPlan');
+        proceedToCheckout(plan, session.customToken);
+      }
+    }
+  }, [session]);
+
   // Check for stored token and page on mount
   useEffect(() => {
-    // Check for Google Auth callback
-    const urlParams = new URLSearchParams(window.location.search);
-    const googleAuth = urlParams.get('googleAuth');
-    const googleToken = urlParams.get('token');
-    
-    if (googleAuth === 'true' && googleToken) {
-      // Store the token from Google OAuth
-      localStorage.setItem('authToken', googleToken);
-      setAuthToken(googleToken);
-      fetchUserAccount(googleToken);
-      setIsLoggedIn(true);
-      
-      // Clean up URL
-      window.history.replaceState({}, document.title, window.location.pathname);
-      return;
-    }
-    
     const token = localStorage.getItem('authToken');
     const savedPage = localStorage.getItem('currentPage');
     
@@ -1455,9 +1467,7 @@ export default function Home() {
                 </div>
 
                 <button
-                  onClick={() => {
-                    window.location.href = '/api/auth/signin/google';
-                  }}
+                  onClick={() => signIn('google', { callbackUrl: '/' })}
                   className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-white hover:bg-gray-50 text-gray-800 font-semibold rounded-xl transition-all duration-300 shadow-lg mb-4"
                 >
                   <svg className="w-5 h-5" viewBox="0 0 24 24">
@@ -1979,9 +1989,7 @@ export default function Home() {
               </div>
 
               <button
-                onClick={() => {
-                  window.location.href = '/api/auth/signin/google';
-                }}
+                onClick={() => signIn('google', { callbackUrl: '/' })}
                 className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-white hover:bg-gray-50 text-gray-800 font-semibold rounded-xl transition-all duration-300 shadow-lg mb-4"
               >
                 <svg className="w-5 h-5" viewBox="0 0 24 24">
@@ -2143,9 +2151,7 @@ export default function Home() {
               </div>
 
               <button
-                onClick={() => {
-                  window.location.href = '/api/auth/signin/google';
-                }}
+                onClick={() => signIn('google', { callbackUrl: '/' })}
                 className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-white hover:bg-gray-50 text-gray-800 font-semibold rounded-xl transition-all duration-300 shadow-lg mb-4"
               >
                 <svg className="w-5 h-5" viewBox="0 0 24 24">
