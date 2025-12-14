@@ -195,7 +195,7 @@ export default function Home() {
     }
   ];
 
-  const compressImage = (file, maxSizeMB = 5) => {
+  const compressImage = (file, maxSizeMB = 2) => {
     return new Promise((resolve) => {
       const reader = new FileReader();
       reader.onload = (e) => {
@@ -205,8 +205,8 @@ export default function Home() {
           let width = img.width;
           let height = img.height;
           
-          // Calculate new dimensions if image is too large
-          const maxDimension = 2048;
+          // Calculate new dimensions - more aggressive resize
+          const maxDimension = 1536;
           if (width > maxDimension || height > maxDimension) {
             if (width > height) {
               height = (height / width) * maxDimension;
@@ -223,8 +223,8 @@ export default function Home() {
           const ctx = canvas.getContext('2d');
           ctx.drawImage(img, 0, 0, width, height);
           
-          // Start with quality 0.9 and reduce if needed
-          let quality = 0.9;
+          // Start with quality 0.8 and reduce if needed
+          let quality = 0.8;
           const compress = () => {
             canvas.toBlob((blob) => {
               const sizeMB = blob.size / (1024 * 1024);
