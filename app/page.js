@@ -142,8 +142,11 @@ export default function Home() {
           await new Promise(resolve => setTimeout(resolve, 1000));
         }
         
-        // If there's an image to restore, save it and download it
-        if (imageToDownload) {
+        // Check purchase context
+        const purchaseContext = sessionStorage.getItem('purchaseContext');
+        
+        // If there's an image to restore AND it's from download context, save it and download it
+        if (imageToDownload && purchaseContext === 'download') {
           setGeneratedImageUrl(imageToDownload);
           setShowDownload(true);
           
@@ -196,9 +199,19 @@ export default function Home() {
           }, 1000);
         }
         
+        // If it's a pricing page purchase, just show success message
+        if (purchaseContext === 'pricing') {
+          setError('');
+          // Optionally show a success message
+          setTimeout(() => {
+            setCurrentPage('account');
+          }, 1000);
+        }
+        
         // Clean up sessionStorage
         sessionStorage.removeItem('pendingImageUrl');
         sessionStorage.removeItem('restoreAfterPayment');
+        sessionStorage.removeItem('purchaseContext');
         
         // Clean up the processed flag after a delay
         setTimeout(() => {
@@ -573,6 +586,9 @@ export default function Home() {
         if (generatedImageUrl) {
           sessionStorage.setItem('pendingImageUrl', generatedImageUrl);
           sessionStorage.setItem('restoreAfterPayment', 'true');
+          sessionStorage.setItem('purchaseContext', 'download');
+        } else {
+          sessionStorage.setItem('purchaseContext', 'pricing');
         }
         
         // Redirect to Stripe checkout
