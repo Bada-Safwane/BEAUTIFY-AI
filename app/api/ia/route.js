@@ -1,13 +1,8 @@
 import { GoogleGenAI } from "@google/genai";
 import { uploadToS3 } from "@/app/utils/utils";
 
-export const config = {
-  api: {
-    bodyParser: {
-      sizeLimit: '10mb',
-    },
-  },
-};
+export const maxDuration = 60;
+export const dynamic = 'force-dynamic';
 
 export async function POST(request) {
   try {
