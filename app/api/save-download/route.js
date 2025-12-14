@@ -49,6 +49,13 @@ export async function POST(request) {
     const pictures = database.collection('pictures');
 
     // Insert the picture record
+    console.log('=== SAVE-DOWNLOAD API CALLED ===');
+    console.log('Email:', email);
+    console.log('UserId:', userId);
+    console.log('Username:', username);
+    console.log('ImageUrl:', imageUrl);
+    console.log('Plan:', plan);
+    
     const result = await pictures.insertOne({
       email,
       userId: userId || null,
@@ -58,7 +65,8 @@ export async function POST(request) {
       createdAt: new Date()
     });
 
-    console.log('Picture saved successfully:', result.insertedId);
+    console.log('=== PICTURE SAVED SUCCESSFULLY ===');
+    console.log('InsertedId:', result.insertedId);
 
     return NextResponse.json({
       success: true,

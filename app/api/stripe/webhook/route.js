@@ -31,6 +31,14 @@ export async function POST(request) {
     
     const { userId, email, plan, credits, imageUrl, context, requiresSignup } = session.metadata;
 
+    console.log('=== WEBHOOK RECEIVED ===');
+    console.log('Email:', email);
+    console.log('UserId:', userId);
+    console.log('Credits:', credits);
+    console.log('ImageUrl:', imageUrl);
+    console.log('Context:', context);
+    console.log('Plan:', plan);
+
     let client;
     
     try {
@@ -45,9 +53,17 @@ export async function POST(request) {
       // Try to find user by email in case they just signed up
       let user = null;
       if (userId && userId !== 'guest') {
+        console.log('Looking for user by ObjectId:', userId);
         user = await users.findOne({ _id: new ObjectId(userId) });
       } else {
+        console.log('Looking for user by email:', email);
         user = await users.findOne({ email: email });
+      }
+
+      console.log('User found:', user ? 'YES' : 'NO');
+      if (user) {
+        console.log('User ID:', user._id.toString());
+        console.log('User credits before:', user.credits);
       }
 
       const creditAmount = parseInt(credits);
@@ -68,7 +84,12 @@ export async function POST(request) {
           );
 
           // Save the image
-          await pictures.insertOne({
+          console.log('SAVING IMAGE TO DATABASE:');
+          console.log('  - userId:', user._id.toString());
+          console.log('  - email:', email);
+          console.log('  - image:', imageUrl);
+          
+          const insertResult = await pictures.insertOne({
             email: email,
             userId: user._id.toString(),
             username: user.username || null,
@@ -77,6 +98,7 @@ export async function POST(request) {
             createdAt: new Date()
           });
 
+          console.log('IMAGE SAVED! InsertedId:', insertResult.insertedId);
           console.log(`Added ${creditsToAdd} credits and saved image for user ${email} (1 credit used for download)`);
         } else {
           // Pricing page purchase - add all credits
@@ -96,6 +118,9 @@ export async function POST(request) {
       }
       // Scenario 2: No user found - store as pending credits
       else {
+        console.log('NO USER FOUND - storing as pending credits');
+        console.log('  - imageUrl:', imageUrl);
+        
         await pendingCredits.insertOne({
           email: email,
           credits: creditAmount,
@@ -107,7 +132,7 @@ export async function POST(request) {
           claimed: false
         });
 
-        console.log(`Stored ${creditAmount} pending credits for ${email}`);
+        console.log(`Stored ${creditAmount} pending credits for ${email} with imageUrl`);
       }
 
     } catch (error) {
