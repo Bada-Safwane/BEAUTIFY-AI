@@ -107,18 +107,71 @@ export default function Home() {
       const shouldDownload = urlParams.get('download');
 
       if (paymentStatus === 'success') {
+        // Check if we've already processed this payment
+        const paymentProcessed = sessionStorage.getItem('paymentProcessed');
+        if (paymentProcessed === 'true') {
+          console.log('Payment already processed, skipping...');
+          // Just clean up URL
+          window.history.replaceState({}, document.title, window.location.pathname);
+          return;
+        }
+        
+        // Mark as processed immediately to prevent duplicates
+        sessionStorage.setItem('paymentProcessed', 'true');
+        
         const shouldRestore = sessionStorage.getItem('restoreAfterPayment');
         const imageToDownload = sessionStorage.getItem('pendingImageUrl');
         
-        // Refresh user account data to get updated credits FIRST
-        if (authToken) {
-          await fetchUserAccount(authToken);
+        // Check if user is logged in - if not, check localStorage
+        let token = authToken;
+        if (!token) {
+          token = localStorage.getItem('authToken');
+          if (token) {
+            setAuthToken(token);
+            await fetchUserAccount(token);
+            await new Promise(resolve => setTimeout(resolve, 1000));
+          } else {
+            // Show login popup
+            setShowAuthPopup(true);
+            setAuthMode('login');
+            return;
+          }
+        } else {
+          // Refresh user account data to get updated credits
+          await fetchUserAccount(token);
+          await new Promise(resolve => setTimeout(resolve, 1000));
         }
         
-        // Restore generated image and trigger download
-        if (shouldRestore === 'true' && imageToDownload) {
+        // If there's an image to restore, save it and download it
+        if (imageToDownload) {
           setGeneratedImageUrl(imageToDownload);
           setShowDownload(true);
+          
+          // IMPORTANT: Save the image to database if user is logged in
+          if (token) {
+            try {
+              // The save-download API will get the user info from the token
+              await fetch('/api/save-download', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                  email: 'from-payment',
+                  imageUrl: imageToDownload,
+                  plan: 'stripe-payment',
+                }),
+              });
+              
+              // Refresh account to show the new image
+              setTimeout(() => {
+                fetchUserAccount(token);
+              }, 1000);
+            } catch (err) {
+              console.error('Error saving image:', err);
+            }
+          }
           
           // Create watermarked preview
           createWatermarkedPreview(imageToDownload).then(watermarked => {
@@ -133,7 +186,7 @@ export default function Home() {
                 const url = window.URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = `ai-enhanced-${Date.now()}.png`;
+                a.download = `betterselfie-${Date.now()}.png`;
                 document.body.appendChild(a);
                 a.click();
                 window.URL.revokeObjectURL(url);
@@ -147,6 +200,11 @@ export default function Home() {
         sessionStorage.removeItem('pendingImageUrl');
         sessionStorage.removeItem('restoreAfterPayment');
         
+        // Clean up the processed flag after a delay
+        setTimeout(() => {
+          sessionStorage.removeItem('paymentProcessed');
+        }, 5000);
+        
         // Stay on home page
         setCurrentPage('home');
         
@@ -154,6 +212,7 @@ export default function Home() {
         window.history.replaceState({}, document.title, window.location.pathname);
       } else if (paymentStatus === 'cancelled') {
         // Handle cancelled payment
+        sessionStorage.removeItem('paymentProcessed');
         window.history.replaceState({}, document.title, window.location.pathname);
       }
     };
@@ -173,7 +232,7 @@ export default function Home() {
       if (response.ok) {
         const data = await response.json();
         setUserData(data.user);
-        setUserImages(data.images);
+        setUserImages(data.images || []);
         setIsLoggedIn(true);
       } else {
         // Token is invalid
@@ -580,22 +639,10 @@ export default function Home() {
     }
 
     try {
-      // Calculate new credits first
+      // Calculate new credits
       const newCredits = userData.credits - 1;
 
-      // First, update credits in database
-      await fetch('/api/user/account', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authToken}`
-        },
-        body: JSON.stringify({
-          credits: newCredits
-        }),
-      });
-
-      // Then save the image
+      // Save the image FIRST (before deducting credits)
       const saveResponse = await fetch('/api/save-download', {
         method: 'POST',
         headers: {
@@ -609,8 +656,20 @@ export default function Home() {
         }),
       });
 
-      if (!saveResponse.ok) {
-        console.error('Failed to save image to database');
+      if (saveResponse.ok) {
+        // Now update credits
+        await fetch('/api/user/account', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`
+          },
+          body: JSON.stringify({
+            credits: newCredits
+          }),
+        });
+      } else {
+        throw new Error('Failed to save image to database');
       }
 
       // Download the image
@@ -619,7 +678,7 @@ export default function Home() {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `ai-enhanced-${Date.now()}.png`;
+      a.download = `betterselfie-${Date.now()}.png`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
@@ -629,14 +688,10 @@ export default function Home() {
       setUserData({ ...userData, credits: newCredits });
       
       // Refresh account data to get updated image list
-      if (authToken) {
-        await fetchUserAccount(authToken);
-      }
-      
-      console.log('Download completed, credit deducted, image saved');
+      await fetchUserAccount(authToken);
     } catch (err) {
       console.error('Download error:', err);
-      setError('Failed to download image');
+      setError('Failed to download image: ' + err.message);
     }
   };
 

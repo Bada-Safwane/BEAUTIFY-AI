@@ -20,6 +20,14 @@ export async function POST(request) {
   try {
     const { email, imageUrl, plan } = await request.json();
     
+    // Validate input
+    if (!email || !imageUrl) {
+      return NextResponse.json(
+        { error: 'Email and image URL are required' },
+        { status: 400 }
+      );
+    }
+    
     // Get token from header if available
     const authHeader = request.headers.get('authorization');
     const token = authHeader?.replace('Bearer ', '');
@@ -31,17 +39,10 @@ export async function POST(request) {
       if (decoded) {
         userId = decoded.userId;
         username = decoded.username;
-        console.log('Saving image with userId:', userId, 'username:', username, 'email:', email);
       }
     }
 
-    if (!email || !imageUrl) {
-      return NextResponse.json(
-        { error: 'Email and image URL are required' },
-        { status: 400 }
-      );
-    }
-
+    // Connect to database
     client = new MongoClient(uri);
     await client.connect();
 
@@ -49,34 +50,23 @@ export async function POST(request) {
     const pictures = database.collection('pictures');
 
     // Insert the picture record
-    console.log('=== SAVE-DOWNLOAD API CALLED ===');
-    console.log('Email:', email);
-    console.log('UserId:', userId);
-    console.log('Username:', username);
-    console.log('ImageUrl:', imageUrl);
-    console.log('Plan:', plan);
-    
     const result = await pictures.insertOne({
-      email,
+      email: email,
       userId: userId || null,
       username: username || null,
       image: imageUrl,
-      plan: plan || null,
+      plan: plan || 'unknown',
       createdAt: new Date()
     });
 
-    console.log('=== PICTURE SAVED SUCCESSFULLY ===');
-    console.log('InsertedId:', result.insertedId);
-
     return NextResponse.json({
       success: true,
-      message: 'Download record saved successfully',
-      pictureId: result.insertedId
+      message: 'Image saved successfully',
+      pictureId: result.insertedId.toString()
     });
   } catch (error) {
-    console.error('Error saving to MongoDB:', error);
     return NextResponse.json(
-      { error: error.message || 'Failed to save download record' },
+      { error: error.message || 'Failed to save image' },
       { status: 500 }
     );
   } finally {

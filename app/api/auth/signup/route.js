@@ -92,12 +92,7 @@ export async function POST(request) {
 
       // If there's an image URL in pending credits, save it to pictures
       if (pendingCredit.imageUrl && pendingCredit.imageUrl !== '') {
-        console.log('=== SAVING PENDING IMAGE ON SIGNUP ===');
-        console.log('UserId:', result.insertedId.toString());
-        console.log('Email:', email);
-        console.log('ImageUrl:', pendingCredit.imageUrl);
-        
-        const pictureResult = await pictures.insertOne({
+        await pictures.insertOne({
           email: email,
           userId: result.insertedId.toString(),
           username: username,
@@ -105,11 +100,6 @@ export async function POST(request) {
           plan: pendingCredit.plan,
           createdAt: new Date()
         });
-        
-        console.log('=== PENDING IMAGE SAVED ===');
-        console.log('PictureId:', pictureResult.insertedId);
-      } else {
-        console.log('No pending image to save (imageUrl:', pendingCredit.imageUrl, ')');
       }
     }
 

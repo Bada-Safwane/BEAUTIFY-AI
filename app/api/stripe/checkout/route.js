@@ -18,12 +18,6 @@ export async function POST(request) {
   try {
     const { plan, email, imageUrl, context } = await request.json();
     
-    console.log('=== CHECKOUT SESSION REQUEST ===');
-    console.log('Plan:', plan);
-    console.log('Email:', email);
-    console.log('ImageUrl:', imageUrl);
-    console.log('Context:', context);
-    
     // Get token from header if available
     const authHeader = request.headers.get('authorization');
     const token = authHeader?.replace('Bearer ', '');
@@ -35,10 +29,7 @@ export async function POST(request) {
       if (decoded) {
         userId = decoded.userId;
         userEmail = decoded.email;
-        console.log('Token decoded - UserId:', userId);
       }
-    } else {
-      console.log('No auth token provided');
     }
 
     // Define pricing plans
@@ -73,19 +64,6 @@ export async function POST(request) {
     }
 
     // Create Stripe checkout session
-    const metadata = {
-      userId: userId || 'guest',
-      email: userEmail,
-      plan: plan,
-      credits: selectedPlan.credits.toString(),
-      imageUrl: imageUrl || '',
-      context: context || 'pricing', // 'pricing' or 'download'
-      requiresSignup: (userId === null || userId === 'guest') && plan !== 'single' ? 'true' : 'false',
-    };
-    
-    console.log('=== CREATING STRIPE SESSION WITH METADATA ===');
-    console.log(JSON.stringify(metadata, null, 2));
-    
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       line_items: [
@@ -105,10 +83,16 @@ export async function POST(request) {
       success_url: `${request.headers.get('origin')}?payment=success${context === 'download' && plan === 'single' ? '&download=true' : ''}`,
       cancel_url: `${request.headers.get('origin')}?payment=cancelled`,
       customer_email: userEmail,
-      metadata,
+      metadata: {
+        userId: userId || 'guest',
+        email: userEmail,
+        plan: plan,
+        credits: selectedPlan.credits.toString(),
+        imageUrl: imageUrl || '',
+        context: context || 'pricing',
+        requiresSignup: (userId === null || userId === 'guest') && plan !== 'single' ? 'true' : 'false',
+      },
     });
-    
-    console.log('Stripe session created:', session.id);
 
     return NextResponse.json({ 
       success: true, 
