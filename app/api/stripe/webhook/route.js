@@ -54,18 +54,20 @@ export async function POST(request) {
 
       // Scenario 1: User exists (either logged in or just signed up)
       if (user) {
-        await users.updateOne(
-          { _id: user._id },
-          { 
-            $inc: { credits: creditAmount },
-            $set: { updatedAt: new Date() }
-          }
-        );
-
-        console.log(`Added ${creditAmount} credits to user ${user._id}`);
-
-        // If they have an image from download context, save it
+        // If there's an image from download context, deduct 1 credit from the purchased amount
         if (imageUrl && imageUrl !== '' && context === 'download') {
+          // Add credits minus 1 (since the image download uses 1 credit)
+          const creditsToAdd = creditAmount - 1;
+          
+          await users.updateOne(
+            { _id: user._id },
+            { 
+              $inc: { credits: creditsToAdd },
+              $set: { updatedAt: new Date() }
+            }
+          );
+
+          // Save the image
           await pictures.insertOne({
             email: email,
             userId: user._id.toString(),
@@ -75,7 +77,18 @@ export async function POST(request) {
             createdAt: new Date()
           });
 
-          console.log(`Saved image for user ${email}`);
+          console.log(`Added ${creditsToAdd} credits and saved image for user ${email} (1 credit used for download)`);
+        } else {
+          // Pricing page purchase - add all credits
+          await users.updateOne(
+            { _id: user._id },
+            { 
+              $inc: { credits: creditAmount },
+              $set: { updatedAt: new Date() }
+            }
+          );
+
+          console.log(`Added ${creditAmount} credits to user ${user._id}`);
         }
 
         // Clean up any pending credits for this user
