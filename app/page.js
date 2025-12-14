@@ -17,6 +17,8 @@ export default function Home() {
   const [processingText, setProcessingText] = useState('Processing...');
   const [showPricingPopup, setShowPricingPopup] = useState(false);
   const [showEmailPopup, setShowEmailPopup] = useState(false);
+  const [showAuthPopup, setShowAuthPopup] = useState(false);
+  const [authMode, setAuthMode] = useState('login');
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [currentPage, setCurrentPage] = useState('home');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -290,30 +292,16 @@ export default function Home() {
       return;
     }
 
-    // For multi-pack purchases, require login first
-    if ((selectedPlan === 'triple' || selectedPlan === 'premium') && !isLoggedIn) {
+    // If user is not logged in, show auth popup instead of redirecting
+    if (!isLoggedIn) {
       setShowPricingPopup(false);
-      setCurrentPage('login');
-      setError('Please login or sign up to purchase credit packs');
+      setShowAuthPopup(true);
+      setAuthMode('login');
       return;
     }
 
-    // For single image purchase by non-logged-in users, collect email first
-    if (selectedPlan === 'single' && !isLoggedIn && !email) {
-      // Show email input popup
-      const userEmail = prompt('Please enter your email to receive your enhanced image:');
-      if (!userEmail || !userEmail.includes('@')) {
-        setError('Valid email is required');
-        return;
-      }
-      setEmail(userEmail);
-      
-      // Continue with payment after email is set
-      await proceedToCheckout(userEmail);
-      return;
-    }
-
-    await proceedToCheckout(userData?.email || email);
+    // User is logged in, proceed to checkout
+    await proceedToCheckout(userData?.email);
   };
 
   const proceedToCheckout = async (userEmail) => {
@@ -360,6 +348,17 @@ export default function Home() {
       console.error('Checkout error:', err);
       setError('Failed to proceed to payment');
     }
+  };
+
+  const handleAuthSuccess = async () => {
+    // After successful auth, close popup and proceed to checkout
+    setShowAuthPopup(false);
+    // Wait a bit for state to update
+    setTimeout(async () => {
+      if (userData?.email) {
+        await proceedToCheckout(userData.email);
+      }
+    }, 500);
   };
 
   const handlePricingPagePurchase = async (plan) => {
@@ -1108,6 +1107,253 @@ export default function Home() {
                   <Download className="w-5 h-5 mr-2 inline" />
                   Complete & Download
                 </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Auth Popup (Login/Signup) */}
+          {showAuthPopup && (
+            <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+              <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-3xl p-8 border border-cyan-500/30 shadow-2xl max-w-md w-full relative max-h-[90vh] overflow-y-auto">
+                <button
+                  onClick={() => setShowAuthPopup(false)}
+                  className="absolute top-4 right-4 p-2 bg-slate-700 hover:bg-slate-600 text-white rounded-full shadow-lg transition-colors duration-200 z-10"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+                
+                <div className="text-center mb-8">
+                  <h3 className="text-3xl font-bold text-white mb-2">
+                    {authMode === 'login' ? 'Welcome Back' : 'Create Account'}
+                  </h3>
+                  <p className="text-slate-300">
+                    {authMode === 'login' ? 'Sign in to continue with your purchase' : 'Sign up to continue with your purchase'}
+                  </p>
+                </div>
+
+                {error && (
+                  <div className="mb-4 p-3 bg-red-500/20 border border-red-500/50 rounded-lg text-red-300 text-sm">
+                    {error}
+                  </div>
+                )}
+
+                {authMode === 'login' ? (
+                  <>
+                    <div className="space-y-4 mb-6">
+                      <div>
+                        <label className="block text-slate-300 text-sm font-semibold mb-2">
+                          Email or Username
+                        </label>
+                        <input
+                          type="text"
+                          value={loginEmail}
+                          onChange={(e) => setLoginEmail(e.target.value)}
+                          placeholder="Enter your email or username"
+                          className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-slate-300 text-sm font-semibold mb-2">
+                          Password
+                        </label>
+                        <input
+                          type="password"
+                          value={loginPassword}
+                          onChange={(e) => setLoginPassword(e.target.value)}
+                          placeholder="Enter your password"
+                          className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                        />
+                      </div>
+                    </div>
+
+                    <Button
+                      onClick={async () => {
+                        if (!loginEmail || !loginPassword) {
+                          setError('Please fill in all fields');
+                          return;
+                        }
+                        
+                        try {
+                          const response = await fetch('/api/auth/login', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                              emailOrUsername: loginEmail,
+                              password: loginPassword
+                            })
+                          });
+
+                          const data = await response.json();
+
+                          if (response.ok) {
+                            localStorage.setItem('authToken', data.token);
+                            setAuthToken(data.token);
+                            setUserData(data.user);
+                            setIsLoggedIn(true);
+                            setError(null);
+                            setLoginEmail('');
+                            setLoginPassword('');
+                            await handleAuthSuccess();
+                          } else {
+                            setError(data.error || 'Login failed');
+                          }
+                        } catch (error) {
+                          setError('Failed to connect to server');
+                        }
+                      }}
+                      className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-semibold py-3 rounded-xl transition-all duration-300 shadow-lg mb-4"
+                    >
+                      Sign In
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <div className="space-y-4 mb-6">
+                      <div>
+                        <label className="block text-slate-300 text-sm font-semibold mb-2">
+                          Username
+                        </label>
+                        <input
+                          type="text"
+                          value={username}
+                          onChange={(e) => setUsername(e.target.value)}
+                          placeholder="Choose a username"
+                          className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-slate-300 text-sm font-semibold mb-2">
+                          Email
+                        </label>
+                        <input
+                          type="email"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          placeholder="your.email@example.com"
+                          className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-slate-300 text-sm font-semibold mb-2">
+                          Password
+                        </label>
+                        <input
+                          type="password"
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          placeholder="Create a password"
+                          className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-slate-300 text-sm font-semibold mb-2">
+                          Confirm Password
+                        </label>
+                        <input
+                          type="password"
+                          value={confirmPassword}
+                          onChange={(e) => setConfirmPassword(e.target.value)}
+                          placeholder="Confirm your password"
+                          className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                        />
+                      </div>
+                    </div>
+
+                    <Button
+                      onClick={async () => {
+                        if (!username || !email || !password || !confirmPassword) {
+                          setError('Please fill in all fields');
+                          return;
+                        }
+                        if (!email.includes('@')) {
+                          setError('Please enter a valid email address');
+                          return;
+                        }
+                        if (password !== confirmPassword) {
+                          setError('Passwords do not match');
+                          return;
+                        }
+                        if (password.length < 6) {
+                          setError('Password must be at least 6 characters long');
+                          return;
+                        }
+                        
+                        try {
+                          const response = await fetch('/api/auth/signup', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ username, email, password })
+                          });
+
+                          const data = await response.json();
+
+                          if (response.ok) {
+                            localStorage.setItem('authToken', data.token);
+                            setAuthToken(data.token);
+                            setUserData(data.user);
+                            setIsLoggedIn(true);
+                            setError(null);
+                            setUsername('');
+                            setEmail('');
+                            setPassword('');
+                            setConfirmPassword('');
+                            await handleAuthSuccess();
+                          } else {
+                            setError(data.error || 'Signup failed');
+                          }
+                        } catch (error) {
+                          setError('Failed to connect to server');
+                        }
+                      }}
+                      className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-semibold py-3 rounded-xl transition-all duration-300 shadow-lg mb-4"
+                    >
+                      Sign Up
+                    </Button>
+                  </>
+                )}
+
+                <div className="relative my-6">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-slate-600"></div>
+                  </div>
+                  <div className="relative flex justify-center text-sm">
+                    <span className="px-2 bg-slate-800 text-slate-400">Or continue with</span>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => {
+                    window.location.href = '/api/auth/signin/google';
+                  }}
+                  className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-white hover:bg-gray-50 text-gray-800 font-semibold rounded-xl transition-all duration-300 shadow-lg mb-4"
+                >
+                  <svg className="w-5 h-5" viewBox="0 0 24 24">
+                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                  </svg>
+                  Continue with Google
+                </button>
+
+                <div className="text-center">
+                  <p className="text-slate-400 text-sm">
+                    {authMode === 'login' ? "Don't have an account?" : "Already have an account?"}{' '}
+                    <button
+                      onClick={() => {
+                        setAuthMode(authMode === 'login' ? 'signup' : 'login');
+                        setError(null);
+                      }}
+                      className="text-cyan-400 hover:text-cyan-300 font-semibold transition-colors"
+                    >
+                      {authMode === 'login' ? 'Sign Up' : 'Sign In'}
+                    </button>
+                  </p>
+                </div>
               </div>
             </div>
           )}
