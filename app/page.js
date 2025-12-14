@@ -58,51 +58,55 @@ export default function Home() {
 
   // Handle payment success callback
   useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const paymentStatus = urlParams.get('payment');
-    const shouldDownload = urlParams.get('download');
+    const handlePaymentSuccess = async () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const paymentStatus = urlParams.get('payment');
+      const shouldDownload = urlParams.get('download');
 
-    if (paymentStatus === 'success') {
-      // Check if this was a single image purchase that needs download
-      if (shouldDownload === 'true') {
-        const imageUrl = sessionStorage.getItem('pendingImageUrl');
-        if (imageUrl) {
-          // Download the image
-          fetch(imageUrl)
-            .then(response => response.blob())
-            .then(blob => {
-              const url = window.URL.createObjectURL(blob);
-              const a = document.createElement('a');
-              a.href = url;
-              a.download = `ai-enhanced-${Date.now()}.png`;
-              document.body.appendChild(a);
-              a.click();
-              window.URL.revokeObjectURL(url);
-              document.body.removeChild(a);
-              sessionStorage.removeItem('pendingImageUrl');
-            })
-            .catch(err => console.error('Download error:', err));
-        }
-      } else {
-        // Multi-pack purchase - refresh credits and redirect based on login status
-        if (authToken) {
-          // Fetch updated account data to show new credits
-          await fetchUserAccount(authToken);
+      if (paymentStatus === 'success') {
+        // Check if this was a single image purchase that needs download
+        if (shouldDownload === 'true') {
+          const imageUrl = sessionStorage.getItem('pendingImageUrl');
+          if (imageUrl) {
+            // Download the image
+            fetch(imageUrl)
+              .then(response => response.blob())
+              .then(blob => {
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `ai-enhanced-${Date.now()}.png`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+                sessionStorage.removeItem('pendingImageUrl');
+              })
+              .catch(err => console.error('Download error:', err));
+          }
+        } else {
+          // Multi-pack purchase - refresh credits and redirect based on login status
+          if (authToken) {
+            // Fetch updated account data to show new credits
+            await fetchUserAccount(authToken);
+          }
+          
+          if (!isLoggedIn) {
+            setCurrentPage('signup');
+          } else {
+            setCurrentPage('account');
+          }
         }
         
-        if (!isLoggedIn) {
-          setCurrentPage('signup');
-        } else {
-          setCurrentPage('account');
-        }
+        // Clean up URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+      } else if (paymentStatus === 'cancelled') {
+        // Handle cancelled payment
+        window.history.replaceState({}, document.title, window.location.pathname);
       }
-      
-      // Clean up URL
-      window.history.replaceState({}, document.title, window.location.pathname);
-    } else if (paymentStatus === 'cancelled') {
-      // Handle cancelled payment
-      window.history.replaceState({}, document.title, window.location.pathname);
-    }
+    };
+    
+    handlePaymentSuccess();
   }, [isLoggedIn]);
 
   // Fetch user account data
