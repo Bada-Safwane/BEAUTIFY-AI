@@ -1,22 +1,9 @@
-import mongoose from 'mongoose';
+import { NextResponse } from 'next/server';
+import { MongoClient } from 'mongodb';
 import jwt from 'jsonwebtoken';
 
 const SECRET = process.env.SECRET || 'your-secret-key-change-this';
-
-// Connect to MongoDB if not already connected
-const connectDB = async () => {
-  if (mongoose.connections[0].readyState) {
-    return;
-  }
-  
-  try {
-    await mongoose.connect(process.env.MONGODB_URI);
-    console.log('MongoDB connected successfully');
-  } catch (error) {
-    console.error('MongoDB connection error:', error);
-    throw error;
-  }
-};
+const uri = process.env.MONGODB_URI;
 
 // Verify JWT token
 function verifyToken(token) {
@@ -27,40 +14,10 @@ function verifyToken(token) {
   }
 }
 
-// Define Picture schema
-const pictureSchema = new mongoose.Schema({
-  email: {
-    type: String,
-    required: true,
-  },
-  userId: {
-    type: String,
-    required: false,
-  },
-  username: {
-    type: String,
-    required: false,
-  },
-  image: {
-    type: String,
-    required: true,
-  },
-  plan: {
-    type: String,
-    required: false,
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now,
-  },
-}, { collection: 'pictures' });
-
-const Picture = mongoose.models.Picture || mongoose.model('Picture', pictureSchema);
-
 export async function POST(request) {
-  try {
-    await connectDB();
+  let client;
 
+  try {
     const { email, imageUrl, plan } = await request.json();
     
     // Get token from header if available
@@ -79,35 +36,44 @@ export async function POST(request) {
     }
 
     if (!email || !imageUrl) {
-      return Response.json(
+      return NextResponse.json(
         { error: 'Email and image URL are required' },
         { status: 400 }
       );
     }
 
-    // Create new picture record
-    const newPicture = new Picture({
+    client = new MongoClient(uri);
+    await client.connect();
+
+    const database = client.db('GeminiDB');
+    const pictures = database.collection('pictures');
+
+    // Insert the picture record
+    const result = await pictures.insertOne({
       email,
+      userId: userId || null,
+      username: username || null,
       image: imageUrl,
-      userId: userId ? userId.toString() : null,
-      username,
-      plan,
+      plan: plan || null,
+      createdAt: new Date()
     });
 
-    await newPicture.save();
+    console.log('Picture saved successfully:', result.insertedId);
 
-    console.log('Picture saved successfully:', newPicture._id);
-
-    return Response.json({
+    return NextResponse.json({
       success: true,
       message: 'Download record saved successfully',
-      pictureId: newPicture._id
+      pictureId: result.insertedId
     });
   } catch (error) {
     console.error('Error saving to MongoDB:', error);
-    return Response.json(
+    return NextResponse.json(
       { error: error.message || 'Failed to save download record' },
       { status: 500 }
     );
+  } finally {
+    if (client) {
+      await client.close();
+    }
   }
 }
