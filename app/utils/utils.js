@@ -1,5 +1,5 @@
-const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
-const { v4: uuidv4 } = require('uuid');
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { v4 as uuidv4 } from 'uuid';
 
 const s3Client = new S3Client({
     region: process.env.AWS_REGION || 'us-east-1',
@@ -31,4 +31,4 @@ const uploadToS3 = async (file) => {
     }
 };
 
-module.exports = { uploadToS3 }
+export { uploadToS3 };
