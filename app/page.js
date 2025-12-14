@@ -38,6 +38,23 @@ export default function Home() {
 
   // Check for stored token and page on mount
   useEffect(() => {
+    // Check for Google Auth callback
+    const urlParams = new URLSearchParams(window.location.search);
+    const googleAuth = urlParams.get('googleAuth');
+    const googleToken = urlParams.get('token');
+    
+    if (googleAuth === 'true' && googleToken) {
+      // Store the token from Google OAuth
+      localStorage.setItem('authToken', googleToken);
+      setAuthToken(googleToken);
+      fetchUserAccount(googleToken);
+      setIsLoggedIn(true);
+      
+      // Clean up URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+      return;
+    }
+    
     const token = localStorage.getItem('authToken');
     const savedPage = localStorage.getItem('currentPage');
     

@@ -22,6 +22,7 @@ const handler = NextAuth({
           const database = client.db('GeminiDB');
           const users = database.collection('users');
           const pendingCredits = database.collection('pendingCredits');
+          const pictures = database.collection('pictures');
 
           // Check if user exists
           let existingUser = await users.findOne({ email: user.email });
@@ -46,7 +47,7 @@ const handler = NextAuth({
               updatedAt: new Date()
             });
 
-            // Mark pending credits as claimed
+            // Mark pending credits as claimed and save pending image if exists
             if (pendingCredit) {
               await pendingCredits.updateOne(
                 { _id: pendingCredit._id },
@@ -58,10 +59,22 @@ const handler = NextAuth({
                   } 
                 }
               );
+
+              // Save pending image if it exists
+              if (pendingCredit.imageUrl && pendingCredit.imageUrl !== '') {
+                await pictures.insertOne({
+                  email: user.email,
+                  userId: result.insertedId.toString(),
+                  username: user.name || user.email.split('@')[0],
+                  image: pendingCredit.imageUrl,
+                  plan: pendingCredit.plan,
+                  createdAt: new Date()
+                });
+              }
             }
           }
 
-          return true;
+          return `/api/auth/google-callback?email=${encodeURIComponent(user.email)}`;
         } catch (error) {
           console.error('Google sign in error:', error);
           return false;
