@@ -64,29 +64,20 @@ export default function Home() {
       const shouldDownload = urlParams.get('download');
 
       if (paymentStatus === 'success') {
-        // Restore complete page state from sessionStorage
-        const storedImagePreview = sessionStorage.getItem('pendingImagePreview');
-        const storedGeneratedUrl = sessionStorage.getItem('pendingGeneratedUrl');
-        const storedShowDownload = sessionStorage.getItem('pendingShowDownload');
+        const shouldRestore = sessionStorage.getItem('restoreAfterPayment');
         const imageToDownload = sessionStorage.getItem('pendingImageUrl');
         
-        if (storedImagePreview) {
-          setImagePreview(storedImagePreview);
-        }
-        if (storedGeneratedUrl) {
-          setGeneratedImageUrl(storedGeneratedUrl);
-        }
-        if (storedShowDownload === 'true') {
-          setShowDownload(true);
-        }
-        
-        // Refresh user account data to get updated credits
+        // Refresh user account data to get updated credits FIRST
         if (authToken) {
           await fetchUserAccount(authToken);
         }
         
-        // Trigger download after state is restored
-        if (imageToDownload) {
+        // Restore generated image and trigger download
+        if (shouldRestore === 'true' && imageToDownload) {
+          setGeneratedImageUrl(imageToDownload);
+          setShowDownload(true);
+          
+          // Trigger download
           setTimeout(() => {
             fetch(imageToDownload)
               .then(response => response.blob())
@@ -101,14 +92,12 @@ export default function Home() {
                 document.body.removeChild(a);
               })
               .catch(err => console.error('Download error:', err));
-          }, 1500);
+          }, 1000);
         }
         
         // Clean up sessionStorage
         sessionStorage.removeItem('pendingImageUrl');
-        sessionStorage.removeItem('pendingImagePreview');
-        sessionStorage.removeItem('pendingGeneratedUrl');
-        sessionStorage.removeItem('pendingShowDownload');
+        sessionStorage.removeItem('restoreAfterPayment');
         
         // Stay on home page
         setCurrentPage('home');
@@ -416,15 +405,11 @@ export default function Home() {
       const data = await response.json();
 
       if (data.success && data.url) {
-        // Store complete state before going to Stripe
+        // Store state before going to Stripe - only the generated image URL
         if (generatedImageUrl) {
           sessionStorage.setItem('pendingImageUrl', generatedImageUrl);
+          sessionStorage.setItem('restoreAfterPayment', 'true');
         }
-        if (imagePreview) {
-          sessionStorage.setItem('pendingImagePreview', imagePreview);
-        }
-        sessionStorage.setItem('pendingGeneratedUrl', generatedImageUrl || '');
-        sessionStorage.setItem('pendingShowDownload', showDownload ? 'true' : 'false');
         
         // Redirect to Stripe checkout
         window.location.href = data.url;
