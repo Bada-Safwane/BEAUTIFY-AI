@@ -1592,21 +1592,21 @@ export default function Home() {
                 {/* Card 1 - Small (h-72) */}
                 <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl overflow-hidden border border-slate-700/50 hover:border-cyan-500/50 transition-colors duration-300 flex flex-col h-72">
                   <div className="h-40 bg-gradient-to-br from-cyan-500 to-blue-600 relative overflow-hidden flex-shrink-0">
-                    <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&h=300&fit=crop" alt="Before" className="w-full h-full object-cover" />
+                    <img src="https://i.pravatar.cc/400?img=1" alt="Before" className="w-full h-full object-cover" />
                     <div className="absolute inset-0 bg-black/20 flex items-end p-4">
                       <div><p className="text-white font-semibold">Sarah M.</p><p className="text-cyan-200 text-sm">3 matches in 24h</p></div>
                     </div>
                   </div>
                   <div className="p-4 flex-grow flex flex-col justify-between">
                     <p className="text-slate-300 text-sm">"The quality is incredible! My photos look so much better!"</p>
-                    <div className="flex gap-1 mt-2">{'★'.repeat(5).split('').map((_, i) => <span key={i} className="text-yellow-400 text-sm">★</span>)}</div>
+                    <div className="flex gap-1 mt-2">{[...Array(4)].map((_, i) => <span key={i} className="text-yellow-400 text-sm">★</span>)}<span className="text-yellow-400 text-sm">☆</span></div>
                   </div>
                 </div>
 
                 {/* Card 2 - Large (h-96) */}
                 <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl overflow-hidden border border-slate-700/50 hover:border-cyan-500/50 transition-colors duration-300 flex flex-col h-96">
                   <div className="h-56 bg-gradient-to-br from-orange-500 to-red-600 relative overflow-hidden flex-shrink-0">
-                    <img src="https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400&h=300&fit=crop" alt="Amazing" className="w-full h-full object-cover" />
+                    <img src="https://i.pravatar.cc/400?img=12" alt="Amazing" className="w-full h-full object-cover" />
                     <div className="absolute inset-0 bg-black/20 flex items-end p-4">
                       <div><p className="text-white font-semibold">David M.</p><p className="text-orange-200 text-sm">Real conversations</p></div>
                     </div>
@@ -1620,28 +1620,28 @@ export default function Home() {
                 {/* Card 3 - Medium (h-80) */}
                 <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl overflow-hidden border border-slate-700/50 hover:border-cyan-500/50 transition-colors duration-300 flex flex-col h-80">
                   <div className="h-48 bg-gradient-to-br from-purple-500 to-indigo-600 relative overflow-hidden flex-shrink-0">
-                    <img src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400&h=300&fit=crop" alt="Success" className="w-full h-full object-cover" />
+                    <img src="https://i.pravatar.cc/400?img=5" alt="Success" className="w-full h-full object-cover" />
                     <div className="absolute inset-0 bg-black/20 flex items-end p-4">
                       <div><p className="text-white font-semibold">Jessica K.</p><p className="text-purple-200 text-sm">7 conversations</p></div>
                     </div>
                   </div>
                   <div className="p-4 flex-grow flex flex-col justify-between">
                     <p className="text-slate-300 text-sm">"Best investment for my profile! Finally getting quality matches!"</p>
-                    <div className="flex gap-1 mt-2">{[...Array(5)].map((_, i) => <span key={i} className="text-yellow-400 text-sm">★</span>)}</div>
+                    <div className="flex gap-1 mt-2">{[...Array(4)].map((_, i) => <span key={i} className="text-yellow-400 text-sm">★</span>)}<span className="text-yellow-400 text-sm">☆</span></div>
                   </div>
                 </div>
 
                 {/* Card 4 - Small (h-72) */}
                 <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl overflow-hidden border border-slate-700/50 hover:border-cyan-500/50 transition-colors duration-300 flex flex-col h-72">
                   <div className="h-40 bg-gradient-to-br from-emerald-500 to-teal-600 relative overflow-hidden flex-shrink-0">
-                    <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=300&fit=crop" alt="Result" className="w-full h-full object-cover" />
+                    <img src="https://i.pravatar.cc/400?img=13" alt="Result" className="w-full h-full object-cover" />
                     <div className="absolute inset-0 bg-black/20 flex items-end p-4">
                       <div><p className="text-white font-semibold">Marcus L.</p><p className="text-teal-200 text-sm">6 matches</p></div>
                     </div>
                   </div>
                   <div className="p-4 flex-grow flex flex-col justify-between">
                     <p className="text-slate-300 text-sm">"Seriously impressed with the enhancement quality!"</p>
-                    <div className="flex gap-1 mt-2">{[...Array(5)].map((_, i) => <span key={i} className="text-yellow-400 text-sm">★</span>)}</div>
+                    <div className="flex gap-1 mt-2">{[...Array(3)].map((_, i) => <span key={i} className="text-yellow-400 text-sm">★</span>)}{[...Array(2)].map((_, i) => <span key={i} className="text-yellow-400 text-sm">☆</span>)}</div>
                   </div>
                 </div>
               </div>
@@ -1651,7 +1651,7 @@ export default function Home() {
                 {/* Card 5 - Large (h-96) */}
                 <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl overflow-hidden border border-slate-700/50 hover:border-cyan-500/50 transition-colors duration-300 flex flex-col h-96">
                   <div className="h-56 bg-gradient-to-br from-pink-500 to-rose-600 relative overflow-hidden flex-shrink-0">
-                    <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&h=300&fit=crop" alt="Transformed" className="w-full h-full object-cover" />
+                    <img src="https://i.pravatar.cc/400?img=9" alt="Transformed" className="w-full h-full object-cover" />
                     <div className="absolute inset-0 bg-black/20 flex items-end p-4">
                       <div><p className="text-white font-semibold">Emma L.</p><p className="text-pink-200 text-sm">5 matches today</p></div>
                     </div>
@@ -1665,42 +1665,42 @@ export default function Home() {
                 {/* Card 6 - Small (h-72) */}
                 <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl overflow-hidden border border-slate-700/50 hover:border-cyan-500/50 transition-colors duration-300 flex flex-col h-72">
                   <div className="h-40 bg-gradient-to-br from-yellow-500 to-amber-600 relative overflow-hidden flex-shrink-0">
-                    <img src="https://images.unsplash.com/photo-1517841905240-472988babdf9?w=400&h=300&fit=crop" alt="Incredible" className="w-full h-full object-cover" />
+                    <img src="https://i.pravatar.cc/400?img=15" alt="Incredible" className="w-full h-full object-cover" />
                     <div className="absolute inset-0 bg-black/20 flex items-end p-4">
                       <div><p className="text-white font-semibold">Chris P.</p><p className="text-yellow-200 text-sm">8 matches in 2 days</p></div>
                     </div>
                   </div>
                   <div className="p-4 flex-grow flex flex-col justify-between">
                     <p className="text-slate-300 text-sm">"Absolutely love the results! My profile looks amazing!"</p>
-                    <div className="flex gap-1 mt-2">{[...Array(5)].map((_, i) => <span key={i} className="text-yellow-400 text-sm">★</span>)}</div>
+                    <div className="flex gap-1 mt-2">{[...Array(4)].map((_, i) => <span key={i} className="text-yellow-400 text-sm">★</span>)}<span className="text-yellow-400 text-sm">☆</span></div>
                   </div>
                 </div>
 
                 {/* Card 7 - Small (h-72) */}
                 <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl overflow-hidden border border-slate-700/50 hover:border-cyan-500/50 transition-colors duration-300 flex flex-col h-72">
                   <div className="h-40 bg-gradient-to-br from-red-500 to-pink-600 relative overflow-hidden flex-shrink-0">
-                    <img src="https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=400&h=300&fit=crop" alt="Stunning" className="w-full h-full object-cover" />
+                    <img src="https://i.pravatar.cc/400?img=20" alt="Stunning" className="w-full h-full object-cover" />
                     <div className="absolute inset-0 bg-black/20 flex items-end p-4">
                       <div><p className="text-white font-semibold">Taylor R.</p><p className="text-pink-200 text-sm">4 new matches</p></div>
                     </div>
                   </div>
                   <div className="p-4 flex-grow flex flex-col justify-between">
                     <p className="text-slate-300 text-sm">"Worth every penny for the quality!"</p>
-                    <div className="flex gap-1 mt-2">{[...Array(5)].map((_, i) => <span key={i} className="text-yellow-400 text-sm">★</span>)}</div>
+                    <div className="flex gap-1 mt-2">{[...Array(4)].map((_, i) => <span key={i} className="text-yellow-400 text-sm">★</span>)}<span className="text-yellow-400 text-sm">☆</span></div>
                   </div>
                 </div>
 
                 {/* Card 8 - Medium (h-80) */}
                 <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl overflow-hidden border border-slate-700/50 hover:border-cyan-500/50 transition-colors duration-300 flex flex-col h-80">
                   <div className="h-48 bg-gradient-to-br from-blue-500 to-cyan-600 relative overflow-hidden flex-shrink-0">
-                    <img src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400&h=300&fit=crop" alt="Success" className="w-full h-full object-cover" />
+                    <img src="https://i.pravatar.cc/400?img=33" alt="Success" className="w-full h-full object-cover" />
                     <div className="absolute inset-0 bg-black/20 flex items-end p-4">
                       <div><p className="text-white font-semibold">Jordan K.</p><p className="text-cyan-200 text-sm">9 conversations</p></div>
                     </div>
                   </div>
                   <div className="p-4 flex-grow flex flex-col justify-between">
                     <p className="text-slate-300 text-sm">"The transformation is unreal! Highly recommended!"</p>
-                    <div className="flex gap-1 mt-2">{[...Array(5)].map((_, i) => <span key={i} className="text-yellow-400 text-sm">★</span>)}</div>
+                    <div className="flex gap-1 mt-2">{[...Array(4)].map((_, i) => <span key={i} className="text-yellow-400 text-sm">★</span>)}<span className="text-yellow-400 text-sm">☆</span></div>
                   </div>
                 </div>
               </div>
@@ -1710,7 +1710,7 @@ export default function Home() {
                 {/* Card 9 - Medium (h-80) */}
                 <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl overflow-hidden border border-slate-700/50 hover:border-cyan-500/50 transition-colors duration-300 flex flex-col h-80">
                   <div className="h-48 bg-gradient-to-br from-violet-500 to-purple-600 relative overflow-hidden flex-shrink-0">
-                    <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&h=300&fit=crop" alt="Stunning" className="w-full h-full object-cover" />
+                    <img src="https://i.pravatar.cc/400?img=47" alt="Stunning" className="w-full h-full object-cover" />
                     <div className="absolute inset-0 bg-black/20 flex items-end p-4">
                       <div><p className="text-white font-semibold">Alex T.</p><p className="text-violet-200 text-sm">10 new matches</p></div>
                     </div>
@@ -1724,21 +1724,21 @@ export default function Home() {
                 {/* Card 10 - Small (h-72) */}
                 <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl overflow-hidden border border-slate-700/50 hover:border-cyan-500/50 transition-colors duration-300 flex flex-col h-72">
                   <div className="h-40 bg-gradient-to-br from-indigo-500 to-blue-600 relative overflow-hidden flex-shrink-0">
-                    <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=300&fit=crop" alt="Result" className="w-full h-full object-cover" />
+                    <img src="https://i.pravatar.cc/400?img=51" alt="Result" className="w-full h-full object-cover" />
                     <div className="absolute inset-0 bg-black/20 flex items-end p-4">
                       <div><p className="text-white font-semibold">Morgan R.</p><p className="text-indigo-200 text-sm">5 matches</p></div>
                     </div>
                   </div>
                   <div className="p-4 flex-grow flex flex-col justify-between">
                     <p className="text-slate-300 text-sm">"Super happy with my enhanced photos!"</p>
-                    <div className="flex gap-1 mt-2">{[...Array(5)].map((_, i) => <span key={i} className="text-yellow-400 text-sm">★</span>)}</div>
+                    <div className="flex gap-1 mt-2">{[...Array(3)].map((_, i) => <span key={i} className="text-yellow-400 text-sm">★</span>)}{[...Array(2)].map((_, i) => <span key={i} className="text-yellow-400 text-sm">☆</span>)}</div>
                   </div>
                 </div>
 
                 {/* Card 11 - Large (h-96) */}
                 <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl overflow-hidden border border-slate-700/50 hover:border-cyan-500/50 transition-colors duration-300 flex flex-col h-96">
                   <div className="h-56 bg-gradient-to-br from-lime-500 to-green-600 relative overflow-hidden flex-shrink-0">
-                    <img src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400&h=300&fit=crop" alt="Success" className="w-full h-full object-cover" />
+                    <img src="https://i.pravatar.cc/400?img=26" alt="Success" className="w-full h-full object-cover" />
                     <div className="absolute inset-0 bg-black/20 flex items-end p-4">
                       <div><p className="text-white font-semibold">Casey S.</p><p className="text-green-200 text-sm">11 matches</p></div>
                     </div>
@@ -1752,14 +1752,14 @@ export default function Home() {
                 {/* Card 12 - Small (h-72) */}
                 <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl overflow-hidden border border-slate-700/50 hover:border-cyan-500/50 transition-colors duration-300 flex flex-col h-72">
                   <div className="h-40 bg-gradient-to-br from-rose-500 to-red-600 relative overflow-hidden flex-shrink-0">
-                    <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&h=300&fit=crop" alt="Amazing" className="w-full h-full object-cover" />
+                    <img src="https://i.pravatar.cc/400?img=32" alt="Amazing" className="w-full h-full object-cover" />
                     <div className="absolute inset-0 bg-black/20 flex items-end p-4">
                       <div><p className="text-white font-semibold">Riley P.</p><p className="text-rose-200 text-sm">7 matches</p></div>
                     </div>
                   </div>
                   <div className="p-4 flex-grow flex flex-col justify-between">
                     <p className="text-slate-300 text-sm">"One of the best purchases I've made!"</p>
-                    <div className="flex gap-1 mt-2">{[...Array(5)].map((_, i) => <span key={i} className="text-yellow-400 text-sm">★</span>)}</div>
+                    <div className="flex gap-1 mt-2">{[...Array(4)].map((_, i) => <span key={i} className="text-yellow-400 text-sm">★</span>)}<span className="text-yellow-400 text-sm">☆</span></div>
                   </div>
                 </div>
               </div>
