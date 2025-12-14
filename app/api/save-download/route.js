@@ -53,7 +53,7 @@ const pictureSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
-});
+}, { collection: 'pictures' });
 
 const Picture = mongoose.models.Picture || mongoose.model('Picture', pictureSchema);
 
@@ -74,6 +74,7 @@ export async function POST(request) {
       if (decoded) {
         userId = decoded.userId;
         username = decoded.username;
+        console.log('Saving image with userId:', userId, 'username:', username, 'email:', email);
       }
     }
 
@@ -88,16 +89,19 @@ export async function POST(request) {
     const newPicture = new Picture({
       email,
       image: imageUrl,
-      userId,
+      userId: userId ? userId.toString() : null,
       username,
       plan,
     });
 
     await newPicture.save();
 
+    console.log('Picture saved successfully:', newPicture._id);
+
     return Response.json({
       success: true,
       message: 'Download record saved successfully',
+      pictureId: newPicture._id
     });
   } catch (error) {
     console.error('Error saving to MongoDB:', error);

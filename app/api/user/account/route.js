@@ -54,11 +54,14 @@ export async function GET(request) {
       );
     }
 
-    // Get user's images
+    // Get user's images - query by userId as string
+    console.log('Fetching images for userId:', decoded.userId);
     const userImages = await pictures
-      .find({ userId: decoded.userId })
+      .find({ userId: decoded.userId.toString() })
       .sort({ createdAt: -1 })
       .toArray();
+
+    console.log('Found', userImages.length, 'images for user');
 
     return NextResponse.json({
       success: true,

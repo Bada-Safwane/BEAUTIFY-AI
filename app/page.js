@@ -580,7 +580,22 @@ export default function Home() {
     }
 
     try {
-      // First, save image and deduct credit via API
+      // Calculate new credits first
+      const newCredits = userData.credits - 1;
+
+      // First, update credits in database
+      await fetch('/api/user/account', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`
+        },
+        body: JSON.stringify({
+          credits: newCredits
+        }),
+      });
+
+      // Then save the image
       const saveResponse = await fetch('/api/save-download', {
         method: 'POST',
         headers: {
@@ -595,25 +610,8 @@ export default function Home() {
       });
 
       if (!saveResponse.ok) {
-        setError('Failed to process download');
-        return;
+        console.error('Failed to save image to database');
       }
-
-      // Update local credits immediately
-      const newCredits = userData.credits - 1;
-      setUserData({ ...userData, credits: newCredits });
-
-      // Also update in database
-      await fetch('/api/user/account', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authToken}`
-        },
-        body: JSON.stringify({
-          credits: newCredits
-        }),
-      });
 
       // Download the image
       const response = await fetch(generatedImageUrl);
@@ -628,14 +626,14 @@ export default function Home() {
       document.body.removeChild(a);
       
       // Update local user data
-      setUserData({ ...userData, credits: userData.credits - 1 });
+      setUserData({ ...userData, credits: newCredits });
       
       // Refresh account data to get updated image list
       if (authToken) {
-        fetchUserAccount(authToken);
+        await fetchUserAccount(authToken);
       }
       
-      console.log('Download completed, credit deducted');
+      console.log('Download completed, credit deducted, image saved');
     } catch (err) {
       console.error('Download error:', err);
       setError('Failed to download image');
