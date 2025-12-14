@@ -81,10 +81,15 @@ export default function Home() {
             .catch(err => console.error('Download error:', err));
         }
       } else {
-        // Multi-pack purchase - show message to sign up or login
+        // Multi-pack purchase - redirect based on login status
         if (!isLoggedIn) {
           setCurrentPage('signup');
-          // You could add a message here to inform the user
+        } else {
+          // User is logged in, refresh their account to show new credits
+          if (authToken) {
+            fetchUserAccount(authToken);
+          }
+          setCurrentPage('account');
         }
       }
       
@@ -285,6 +290,14 @@ export default function Home() {
       return;
     }
 
+    // For multi-pack purchases, require login first
+    if ((selectedPlan === 'triple' || selectedPlan === 'premium') && !isLoggedIn) {
+      setShowPricingPopup(false);
+      setCurrentPage('login');
+      setError('Please login or sign up to purchase credit packs');
+      return;
+    }
+
     try {
       const headers = {
         'Content-Type': 'application/json',
@@ -331,6 +344,13 @@ export default function Home() {
   };
 
   const handlePricingPagePurchase = async (plan) => {
+    // Require login for all pricing page purchases
+    if (!isLoggedIn) {
+      setCurrentPage('login');
+      setError('Please login or sign up to purchase credits');
+      return;
+    }
+
     try {
       const headers = {
         'Content-Type': 'application/json',
