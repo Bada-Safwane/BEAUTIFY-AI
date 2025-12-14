@@ -19,6 +19,7 @@ export default function Home() {
   const [showEmailPopup, setShowEmailPopup] = useState(false);
   const [showAuthPopup, setShowAuthPopup] = useState(false);
   const [authMode, setAuthMode] = useState('login');
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [currentPage, setCurrentPage] = useState('home');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -83,14 +84,15 @@ export default function Home() {
             .catch(err => console.error('Download error:', err));
         }
       } else {
-        // Multi-pack purchase - redirect based on login status
+        // Multi-pack purchase - refresh credits and redirect based on login status
+        if (authToken) {
+          // Fetch updated account data to show new credits
+          await fetchUserAccount(authToken);
+        }
+        
         if (!isLoggedIn) {
           setCurrentPage('signup');
         } else {
-          // User is logged in, refresh their account to show new credits
-          if (authToken) {
-            fetchUserAccount(authToken);
-          }
           setCurrentPage('account');
         }
       }
@@ -410,15 +412,29 @@ export default function Home() {
     }
   };
 
-  const handleAuthSuccess = async () => {
-    // After successful auth, close popup and proceed to checkout
-    setShowAuthPopup(false);
-    // Wait a bit for state to update
-    setTimeout(async () => {
-      if (userData?.email) {
-        await proceedToCheckout(userData.email);
+  const handleAuthSuccess = async (token) => {
+    // After successful auth, fetch updated user data
+    try {
+      const response = await fetch('/api/user/account', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setUserData(data.user);
+        setShowAuthPopup(false);
+        
+        // Proceed to checkout with fresh user data
+        await proceedToCheckout(data.user.email);
+      } else {
+        setError('Failed to fetch account data');
       }
-    }, 500);
+    } catch (err) {
+      console.error('Error fetching user data:', err);
+      setError('Failed to proceed to payment');
+    }
   };
 
   const handlePricingPagePurchase = async (plan) => {
@@ -575,16 +591,18 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 flex flex-col">
       {/* Header */}
-      <header className="w-full py-4 px-6 bg-slate-950/50 backdrop-blur-md border-b border-slate-700/50">
+      <header className="w-full py-4 px-4 md:px-6 bg-slate-950/50 backdrop-blur-md border-b border-slate-700/50">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <button 
             onClick={() => setCurrentPage('home')}
             className="flex items-center gap-2 hover:opacity-80 transition-opacity"
           >
             <Sparkles className="w-5 h-5 text-cyan-400" />
-            <span className="font-semibold text-white">AI Image Studio</span>
+            <span className="font-semibold text-white text-sm md:text-base">AI Image Studio</span>
           </button>
-          <nav className="flex gap-6 text-sm text-slate-400 items-center">
+          
+          {/* Desktop Navigation */}
+          <nav className="hidden md:flex gap-6 text-sm text-slate-400 items-center">
             {isLoggedIn && (
               <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-800/50 border border-cyan-500/30 rounded-lg">
                 <Sparkles className="w-4 h-4 text-cyan-400" />
@@ -627,7 +645,67 @@ export default function Home() {
               </>
             )}
           </nav>
+
+          {/* Mobile Navigation */}
+          <div className="flex md:hidden items-center gap-3">
+            {isLoggedIn && (
+              <div className="flex items-center gap-1.5 px-2 py-1 bg-slate-800/50 border border-cyan-500/30 rounded-lg">
+                <Sparkles className="w-3 h-3 text-cyan-400" />
+                <span className="text-white font-semibold text-sm">{userData?.credits || 0}</span>
+              </div>
+            )}
+            <button 
+              onClick={() => setShowMobileMenu(!showMobileMenu)}
+              className="p-2 text-white hover:text-cyan-400 transition-colors"
+            >
+              {showMobileMenu ? <X className="w-6 h-6" /> : <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>}
+            </button>
+          </div>
         </div>
+        
+        {/* Mobile Menu Dropdown */}
+        {showMobileMenu && (
+          <div className="md:hidden mt-4 pb-4 border-t border-slate-700/50 pt-4">
+            <nav className="flex flex-col gap-3">
+              <button onClick={() => { setCurrentPage('pricing'); setShowMobileMenu(false); }} className="text-left text-slate-400 hover:text-cyan-400 transition-colors py-2">Pricing</button>
+              <button onClick={() => { setCurrentPage('about'); setShowMobileMenu(false); }} className="text-left text-slate-400 hover:text-cyan-400 transition-colors py-2">About</button>
+              {!isLoggedIn ? (
+                <button 
+                  onClick={() => { setCurrentPage('login'); setShowMobileMenu(false); }} 
+                  className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white px-4 py-2 rounded-lg transition-all duration-300 font-semibold text-center"
+                >
+                  Sign Up / Login
+                </button>
+              ) : (
+                <>
+                  <button 
+                    onClick={() => {
+                      setCurrentPage('account');
+                      fetchUserAccount(authToken);
+                      setShowMobileMenu(false);
+                    }} 
+                    className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white px-4 py-2 rounded-lg transition-all duration-300 font-semibold text-center"
+                  >
+                    Account
+                  </button>
+                  <button 
+                    onClick={() => {
+                      localStorage.removeItem('authToken');
+                      setAuthToken(null);
+                      setUserData(null);
+                      setIsLoggedIn(false);
+                      setCurrentPage('home');
+                      setShowMobileMenu(false);
+                    }} 
+                    className="text-left text-slate-400 hover:text-cyan-400 transition-colors py-2"
+                  >
+                    Logout
+                  </button>
+                </>
+              )}
+            </nav>
+          </div>
+        )}
       </header>
 
       {/* Main Content */}
@@ -1215,12 +1293,11 @@ export default function Home() {
                           if (response.ok) {
                             localStorage.setItem('authToken', data.token);
                             setAuthToken(data.token);
-                            setUserData(data.user);
                             setIsLoggedIn(true);
                             setError(null);
                             setLoginEmail('');
                             setLoginPassword('');
-                            await handleAuthSuccess();
+                            await handleAuthSuccess(data.token);
                           } else {
                             setError(data.error || 'Login failed');
                           }
@@ -1320,14 +1397,13 @@ export default function Home() {
                           if (response.ok) {
                             localStorage.setItem('authToken', data.token);
                             setAuthToken(data.token);
-                            setUserData(data.user);
                             setIsLoggedIn(true);
                             setError(null);
                             setUsername('');
                             setEmail('');
                             setPassword('');
                             setConfirmPassword('');
-                            await handleAuthSuccess();
+                            await handleAuthSuccess(data.token);
                           } else {
                             setError(data.error || 'Signup failed');
                           }
