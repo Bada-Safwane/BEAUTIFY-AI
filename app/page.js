@@ -69,24 +69,36 @@ export default function Home() {
           await fetchUserAccount(authToken);
         }
         
-        // Check if there's an image to download
+        // Restore image preview from sessionStorage
+        const imagePreviewUrl = sessionStorage.getItem('pendingImagePreview');
+        if (imagePreviewUrl) {
+          setGeneratedImageUrl(imagePreviewUrl);
+          setShowDownload(true);
+        }
+        
+        // Check if there's an image to download and trigger download
         const imageUrl = sessionStorage.getItem('pendingImageUrl');
         if (imageUrl) {
-          // Download the image
-          fetch(imageUrl)
-            .then(response => response.blob())
-            .then(blob => {
-              const url = window.URL.createObjectURL(blob);
-              const a = document.createElement('a');
-              a.href = url;
-              a.download = `ai-enhanced-${Date.now()}.png`;
-              document.body.appendChild(a);
-              a.click();
-              window.URL.revokeObjectURL(url);
-              document.body.removeChild(a);
-              sessionStorage.removeItem('pendingImageUrl');
-            })
-            .catch(err => console.error('Download error:', err));
+          // Small delay to ensure page is loaded before download
+          setTimeout(() => {
+            fetch(imageUrl)
+              .then(response => response.blob())
+              .then(blob => {
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `ai-enhanced-${Date.now()}.png`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+              })
+              .catch(err => console.error('Download error:', err));
+          }, 1000);
+          
+          // Clean up sessionStorage
+          sessionStorage.removeItem('pendingImageUrl');
+          sessionStorage.removeItem('pendingImagePreview');
         }
         
         // Always redirect to home page after payment
@@ -395,9 +407,10 @@ export default function Home() {
       const data = await response.json();
 
       if (data.success && data.url) {
-        // Store image URL in sessionStorage for single image downloads
-        if (selectedPlan === 'single' && generatedImageUrl) {
+        // Store image URL in sessionStorage for download after payment
+        if (generatedImageUrl) {
           sessionStorage.setItem('pendingImageUrl', generatedImageUrl);
+          sessionStorage.setItem('pendingImagePreview', generatedImageUrl);
         }
         // Redirect to Stripe checkout
         window.location.href = data.url;
