@@ -107,7 +107,7 @@ const handler = NextAuth({
           if (dbUser) {
             // Generate our custom JWT token
             const customToken = jwt.sign(
-              { userId: dbUser._id, username: dbUser.username, email: dbUser.email },
+              { userId: dbUser._id.toString(), username: dbUser.username, email: dbUser.email },
               SECRET,
               { expiresIn: '7d' }
             );

@@ -57,7 +57,7 @@ export async function GET(request) {
     // Get user's images - query by userId as string
     console.log('Fetching images for userId:', decoded.userId);
     const userImages = await pictures
-      .find({ userId: decoded.userId.toString() })
+      .find({ userId: decoded.userId })
       .sort({ createdAt: -1 })
       .toArray();
 
