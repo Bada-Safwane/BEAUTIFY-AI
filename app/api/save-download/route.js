@@ -1,4 +1,7 @@
 import mongoose from 'mongoose';
+import jwt from 'jsonwebtoken';
+
+const SECRET = process.env.SECRET || 'your-secret-key-change-this';
 
 // Connect to MongoDB if not already connected
 const connectDB = async () => {
@@ -15,15 +18,36 @@ const connectDB = async () => {
   }
 };
 
+// Verify JWT token
+function verifyToken(token) {
+  try {
+    return jwt.verify(token, SECRET);
+  } catch (error) {
+    return null;
+  }
+}
+
 // Define Picture schema
 const pictureSchema = new mongoose.Schema({
   email: {
     type: String,
     required: true,
   },
+  userId: {
+    type: String,
+    required: false,
+  },
+  username: {
+    type: String,
+    required: false,
+  },
   image: {
     type: String,
     required: true,
+  },
+  plan: {
+    type: String,
+    required: false,
   },
   createdAt: {
     type: Date,
@@ -37,7 +61,21 @@ export async function POST(request) {
   try {
     await connectDB();
 
-    const { email, imageUrl } = await request.json();
+    const { email, imageUrl, plan } = await request.json();
+    
+    // Get token from header if available
+    const authHeader = request.headers.get('authorization');
+    const token = authHeader?.replace('Bearer ', '');
+    let userId = null;
+    let username = null;
+
+    if (token) {
+      const decoded = verifyToken(token);
+      if (decoded) {
+        userId = decoded.userId;
+        username = decoded.username;
+      }
+    }
 
     if (!email || !imageUrl) {
       return Response.json(
@@ -50,6 +88,9 @@ export async function POST(request) {
     const newPicture = new Picture({
       email,
       image: imageUrl,
+      userId,
+      username,
+      plan,
     });
 
     await newPicture.save();

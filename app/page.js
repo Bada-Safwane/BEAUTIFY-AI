@@ -19,6 +19,106 @@ export default function Home() {
   const [showEmailPopup, setShowEmailPopup] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [currentPage, setCurrentPage] = useState('home');
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [authToken, setAuthToken] = useState(null);
+  const [userData, setUserData] = useState(null);
+  const [userImages, setUserImages] = useState([]);
+  const [isEditingAccount, setIsEditingAccount] = useState(false);
+  const [editUsername, setEditUsername] = useState('');
+  const [editEmail, setEditEmail] = useState('');
+
+  // Check for stored token and page on mount
+  useEffect(() => {
+    const token = localStorage.getItem('authToken');
+    const savedPage = localStorage.getItem('currentPage');
+    
+    if (token) {
+      setAuthToken(token);
+      fetchUserAccount(token);
+    }
+    
+    if (savedPage) {
+      setCurrentPage(savedPage);
+    }
+  }, []);
+
+  // Persist current page to localStorage
+  useEffect(() => {
+    localStorage.setItem('currentPage', currentPage);
+  }, [currentPage]);
+
+  // Handle payment success callback
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const paymentStatus = urlParams.get('payment');
+    const shouldDownload = urlParams.get('download');
+
+    if (paymentStatus === 'success') {
+      // Check if this was a single image purchase that needs download
+      if (shouldDownload === 'true') {
+        const imageUrl = sessionStorage.getItem('pendingImageUrl');
+        if (imageUrl) {
+          // Download the image
+          fetch(imageUrl)
+            .then(response => response.blob())
+            .then(blob => {
+              const url = window.URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = `ai-enhanced-${Date.now()}.png`;
+              document.body.appendChild(a);
+              a.click();
+              window.URL.revokeObjectURL(url);
+              document.body.removeChild(a);
+              sessionStorage.removeItem('pendingImageUrl');
+            })
+            .catch(err => console.error('Download error:', err));
+        }
+      } else {
+        // Multi-pack purchase - show message to sign up or login
+        if (!isLoggedIn) {
+          setCurrentPage('signup');
+          // You could add a message here to inform the user
+        }
+      }
+      
+      // Clean up URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    } else if (paymentStatus === 'cancelled') {
+      // Handle cancelled payment
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, [isLoggedIn]);
+
+  // Fetch user account data
+  const fetchUserAccount = async (token) => {
+    try {
+      const response = await fetch('/api/user/account', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setUserData(data.user);
+        setUserImages(data.images);
+        setIsLoggedIn(true);
+      } else {
+        // Token is invalid
+        localStorage.removeItem('authToken');
+        setAuthToken(null);
+        setIsLoggedIn(false);
+      }
+    } catch (error) {
+      console.error('Error fetching account:', error);
+    }
+  };
 
   // Processing animation effect
   useEffect(() => {
@@ -168,12 +268,182 @@ export default function Home() {
       setError('No image available to download');
       return;
     }
-    setShowPricingPopup(true);
+    
+    // If user is logged in and has at least 1 credit, download directly
+    if (isLoggedIn && userData && userData.credits >= 1) {
+      handleAuthenticatedDownload();
+    } else {
+      // If not logged in or no credits, show pricing popup
+      setShowPricingPopup(true);
+    }
   };
 
-  const handleProceedToEmail = () => {
-    setShowPricingPopup(false);
-    setShowEmailPopup(true);
+  const handleProceedToEmail = async () => {
+    if (!selectedPlan) {
+      setError('Please select a plan');
+      return;
+    }
+
+    try {
+      const headers = {
+        'Content-Type': 'application/json',
+      };
+      
+      if (authToken) {
+        headers['Authorization'] = `Bearer ${authToken}`;
+      }
+
+      // Map frontend plan names to backend plan names
+      const planMap = {
+        'single': 'single',
+        'triple': '3-pack',
+        'premium': '10-pack'
+      };
+
+      const response = await fetch('/api/stripe/checkout', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          plan: planMap[selectedPlan],
+          email: userData?.email || email,
+          imageUrl: generatedImageUrl,
+          context: 'download' // This is from the download button flow
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success && data.url) {
+        // Store image URL in sessionStorage for single image downloads
+        if (selectedPlan === 'single' && generatedImageUrl) {
+          sessionStorage.setItem('pendingImageUrl', generatedImageUrl);
+        }
+        // Redirect to Stripe checkout
+        window.location.href = data.url;
+      } else {
+        setError('Failed to create checkout session');
+      }
+    } catch (err) {
+      console.error('Checkout error:', err);
+      setError('Failed to proceed to payment');
+    }
+  };
+
+  const handlePricingPagePurchase = async (plan) => {
+    try {
+      const headers = {
+        'Content-Type': 'application/json',
+      };
+      
+      if (authToken) {
+        headers['Authorization'] = `Bearer ${authToken}`;
+      }
+
+      // Map frontend plan names to backend plan names
+      const planMap = {
+        'single': 'single',
+        'triple': '3-pack',
+        'premium': '10-pack'
+      };
+
+      const response = await fetch('/api/stripe/checkout', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          plan: planMap[plan],
+          email: userData?.email || '',
+          imageUrl: '',
+          context: 'pricing' // This is from the pricing page
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success && data.url) {
+        // Redirect to Stripe checkout
+        window.location.href = data.url;
+      } else {
+        setError('Failed to create checkout session');
+      }
+    } catch (err) {
+      console.error('Checkout error:', err);
+      setError('Failed to proceed to payment');
+    }
+  };
+
+  const handleAuthenticatedDownload = async () => {
+    if (!generatedImageUrl) {
+      setError('No image available to download');
+      return;
+    }
+
+    if (!userData || userData.credits < 1) {
+      setError('Insufficient credits');
+      setShowPricingPopup(true);
+      return;
+    }
+
+    try {
+      // Deduct credit from user account
+      const updateResponse = await fetch('/api/user/account', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`
+        },
+        body: JSON.stringify({
+          credits: userData.credits - 1
+        }),
+      });
+
+      if (!updateResponse.ok) {
+        setError('Failed to deduct credit');
+        return;
+      }
+
+      // Save image to user's account
+      const saveResponse = await fetch('/api/save-download', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`
+        },
+        body: JSON.stringify({
+          email: userData.email,
+          imageUrl: generatedImageUrl,
+          plan: 'credit',
+        }),
+      });
+
+      if (!saveResponse.ok) {
+        console.error('Failed to save download record');
+      }
+
+      // Download the image
+      const response = await fetch(generatedImageUrl);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `ai-enhanced-${Date.now()}.png`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      // Update local user data
+      setUserData({ ...userData, credits: userData.credits - 1 });
+      
+      // Refresh account data to get updated image list
+      if (authToken) {
+        fetchUserAccount(authToken);
+      }
+      
+      console.log('Download completed, credit deducted');
+    } catch (err) {
+      console.error('Download error:', err);
+      setError('Failed to download image');
+    }
   };
 
   const handleFinalDownload = async () => {
@@ -189,11 +459,17 @@ export default function Home() {
 
     try {
       // Save to MongoDB first
+      const headers = {
+        'Content-Type': 'application/json',
+      };
+      
+      if (authToken) {
+        headers['Authorization'] = `Bearer ${authToken}`;
+      }
+      
       const saveResponse = await fetch('/api/save-download', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify({
           email,
           imageUrl: generatedImageUrl,
@@ -243,10 +519,41 @@ export default function Home() {
             <Sparkles className="w-5 h-5 text-cyan-400" />
             <span className="font-semibold text-white">AI Image Studio</span>
           </button>
-          <nav className="flex gap-6 text-sm text-slate-400">
-            <button onClick={() => setCurrentPage('home')} className="hover:text-cyan-400 transition-colors">Features</button>
+          <nav className="flex gap-6 text-sm text-slate-400 items-center">
             <button onClick={() => setCurrentPage('pricing')} className="hover:text-cyan-400 transition-colors">Pricing</button>
             <button onClick={() => setCurrentPage('about')} className="hover:text-cyan-400 transition-colors">About</button>
+            {!isLoggedIn ? (
+              <button 
+                onClick={() => setCurrentPage('login')} 
+                className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white px-4 py-2 rounded-lg transition-all duration-300 font-semibold"
+              >
+                Sign Up / Login
+              </button>
+            ) : (
+              <>
+                <button 
+                  onClick={() => {
+                    setCurrentPage('account');
+                    fetchUserAccount(authToken);
+                  }} 
+                  className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white px-4 py-2 rounded-lg transition-all duration-300 font-semibold"
+                >
+                  Account
+                </button>
+                <button 
+                  onClick={() => {
+                    localStorage.removeItem('authToken');
+                    setAuthToken(null);
+                    setUserData(null);
+                    setIsLoggedIn(false);
+                    setCurrentPage('home');
+                  }} 
+                  className="hover:text-cyan-400 transition-colors"
+                >
+                  Logout
+                </button>
+              </>
+            )}
           </nav>
         </div>
       </header>
@@ -536,7 +843,7 @@ export default function Home() {
                   </p>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                   {/* Single Image Plan */}
                   <div 
                     onClick={() => setSelectedPlan('single')}
@@ -574,7 +881,7 @@ export default function Home() {
                     }`}
                   >
                     <div className="absolute -top-3 right-4 bg-gradient-to-r from-cyan-500 to-blue-600 text-white text-xs font-bold px-3 py-1 rounded-full">
-                      BEST VALUE
+                      POPULAR
                     </div>
                     <div className="text-center">
                       <p className="text-slate-400 text-sm uppercase tracking-widest mb-2">3 Images Bundle</p>
@@ -597,6 +904,38 @@ export default function Home() {
                       </ul>
                     </div>
                   </div>
+
+                  {/* 10 Images Plan */}
+                  <div 
+                    onClick={() => setSelectedPlan('premium')}
+                    className={`bg-slate-800/50 rounded-2xl p-6 border-2 transition-all cursor-pointer hover:scale-105 relative ${
+                      selectedPlan === 'premium' ? 'border-cyan-500 shadow-cyan-500/20' : 'border-slate-700/50'
+                    }`}
+                  >
+                    <div className="absolute -top-3 right-4 bg-gradient-to-r from-cyan-500 to-blue-600 text-white text-xs font-bold px-3 py-1 rounded-full">
+                      BEST VALUE
+                    </div>
+                    <div className="text-center">
+                      <p className="text-slate-400 text-sm uppercase tracking-widest mb-2">10 Images Bundle</p>
+                      <div className="mb-4">
+                        <span className="text-4xl font-bold text-white">€25.00</span>
+                      </div>
+                      <ul className="text-left space-y-2 text-slate-300 text-sm">
+                        <li className="flex items-center gap-2">
+                          <span className="text-cyan-400">✓</span>
+                          10 Image Credits
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <span className="text-cyan-400">✓</span>
+                          AI-Powered Enhancement
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <span className="text-cyan-400">✓</span>
+                          Save €14.90
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
                 </div>
 
                 <Button
@@ -604,7 +943,7 @@ export default function Home() {
                   disabled={!selectedPlan}
                   className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-semibold py-3 rounded-xl transition-all duration-300 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Proceed to Payment
+                  {isLoggedIn ? 'Purchase Credits' : 'Continue to Checkout'}
                 </Button>
               </div>
             </div>
@@ -859,7 +1198,7 @@ export default function Home() {
               <p className="text-lg text-slate-300">Choose the plan that works best for you</p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
               {/* Single Image Plan */}
               <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-3xl p-8 border border-slate-700/50 hover:border-cyan-500/30 transition-all duration-300 hover:scale-105">
                 <div className="text-center">
@@ -886,18 +1225,18 @@ export default function Home() {
                     </li>
                   </ul>
                   <Button
-                    onClick={() => setCurrentPage('home')}
+                    onClick={() => handlePricingPagePurchase('single')}
                     className="w-full bg-slate-700 hover:bg-slate-600 text-white font-semibold py-3 rounded-xl transition-all duration-300"
                   >
-                    Get Started
+                    Purchase Now
                   </Button>
                 </div>
               </div>
 
               {/* 3 Images Plan */}
-              <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-3xl p-8 border border-cyan-500/30 hover:border-cyan-500/50 transition-all duration-300 hover:scale-105 relative">
+              <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-3xl p-8 border border-slate-700/50 hover:border-cyan-500/30 transition-all duration-300 hover:scale-105 relative">
                 <div className="absolute -top-3 right-4 bg-gradient-to-r from-cyan-500 to-blue-600 text-white text-xs font-bold px-3 py-1 rounded-full">
-                  BEST VALUE
+                  POPULAR
                 </div>
                 <div className="text-center">
                   <p className="text-slate-400 text-sm uppercase tracking-widest mb-4">3 Images Bundle</p>
@@ -923,7 +1262,44 @@ export default function Home() {
                     </li>
                   </ul>
                   <Button
-                    onClick={() => setCurrentPage('home')}
+                    onClick={() => handlePricingPagePurchase('triple')}
+                    className="w-full bg-slate-700 hover:bg-slate-600 text-white font-semibold py-3 rounded-xl transition-all duration-300"
+                  >
+                    Purchase Now
+                  </Button>
+                </div>
+              </div>
+
+              {/* 10 Images Plan */}
+              <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-3xl p-8 border border-cyan-500/30 hover:border-cyan-500/50 transition-all duration-300 hover:scale-105 relative">
+                <div className="absolute -top-3 right-4 bg-gradient-to-r from-cyan-500 to-blue-600 text-white text-xs font-bold px-3 py-1 rounded-full">
+                  BEST VALUE
+                </div>
+                <div className="text-center">
+                  <p className="text-slate-400 text-sm uppercase tracking-widest mb-4">10 Images Bundle</p>
+                  <div className="mb-6">
+                    <span className="text-5xl font-bold text-white">€25.00</span>
+                  </div>
+                  <ul className="text-left space-y-3 mb-8 text-slate-300">
+                    <li className="flex items-center gap-2">
+                      <span className="text-cyan-400">✓</span>
+                      10 Image Credits
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <span className="text-cyan-400">✓</span>
+                      AI-Powered Enhancement
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <span className="text-cyan-400">✓</span>
+                      High-Quality Results
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <span className="text-cyan-400">✓</span>
+                      Save €14.90
+                    </li>
+                  </ul>
+                  <Button
+                    onClick={() => handlePricingPagePurchase('premium')}
                     className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-semibold py-3 rounded-xl transition-all duration-300"
                   >
                     Get Started
@@ -1013,6 +1389,434 @@ export default function Home() {
                   Try It Now
                 </Button>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Login Page */}
+        {currentPage === 'login' && (
+          <div className="max-w-md mx-auto px-6 py-12">
+            <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-3xl p-8 border border-slate-700/50 shadow-2xl">
+              <div className="text-center mb-8">
+                <h1 className="text-4xl font-bold text-white mb-2">
+                  Welcome <span className="bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">Back</span>
+                </h1>
+                <p className="text-slate-300">Sign in to your account</p>
+              </div>
+
+              {error && (
+                <div className="mb-4 p-3 bg-red-500/20 border border-red-500/50 rounded-lg text-red-300 text-sm">
+                  {error}
+                </div>
+              )}
+
+              <div className="space-y-4 mb-6">
+                <div>
+                  <label className="block text-slate-300 text-sm font-semibold mb-2">
+                    Email or Username
+                  </label>
+                  <input
+                    type="text"
+                    value={loginEmail}
+                    onChange={(e) => setLoginEmail(e.target.value)}
+                    placeholder="Enter your email or username"
+                    className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-slate-300 text-sm font-semibold mb-2">
+                    Password
+                  </label>
+                  <input
+                    type="password"
+                    value={loginPassword}
+                    onChange={(e) => setLoginPassword(e.target.value)}
+                    placeholder="Enter your password"
+                    className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                  />
+                </div>
+              </div>
+
+              <Button
+                onClick={async () => {
+                  if (!loginEmail || !loginPassword) {
+                    setError('Please fill in all fields');
+                    return;
+                  }
+                  
+                  try {
+                    const response = await fetch('/api/auth/login', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        emailOrUsername: loginEmail,
+                        password: loginPassword
+                      })
+                    });
+
+                    const data = await response.json();
+
+                    if (response.ok) {
+                      localStorage.setItem('authToken', data.token);
+                      setAuthToken(data.token);
+                      setUserData(data.user);
+                      setIsLoggedIn(true);
+                      setCurrentPage('home');
+                      setError(null);
+                      setLoginEmail('');
+                      setLoginPassword('');
+                    } else {
+                      setError(data.error || 'Login failed');
+                    }
+                  } catch (error) {
+                    setError('Failed to connect to server');
+                  }
+                }}
+                className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-semibold py-3 rounded-xl transition-all duration-300 shadow-lg mb-4"
+              >
+                Sign In
+              </Button>
+
+              <div className="text-center">
+                <p className="text-slate-400 text-sm">
+                  Don't have an account?{' '}
+                  <button
+                    onClick={() => {
+                      setCurrentPage('signup');
+                      setError(null);
+                    }}
+                    className="text-cyan-400 hover:text-cyan-300 font-semibold transition-colors"
+                  >
+                    Sign Up
+                  </button>
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Signup Page */}
+        {currentPage === 'signup' && (
+          <div className="max-w-md mx-auto px-6 py-12">
+            <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-3xl p-8 border border-slate-700/50 shadow-2xl">
+              <div className="text-center mb-8">
+                <h1 className="text-4xl font-bold text-white mb-2">
+                  Create <span className="bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">Account</span>
+                </h1>
+                <p className="text-slate-300">Join us today and enhance your photos</p>
+              </div>
+
+              {error && (
+                <div className="mb-4 p-3 bg-red-500/20 border border-red-500/50 rounded-lg text-red-300 text-sm">
+                  {error}
+                </div>
+              )}
+
+              <div className="space-y-4 mb-6">
+                <div>
+                  <label className="block text-slate-300 text-sm font-semibold mb-2">
+                    Username
+                  </label>
+                  <input
+                    type="text"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    placeholder="Choose a username"
+                    className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-slate-300 text-sm font-semibold mb-2">
+                    Email
+                  </label>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="your.email@example.com"
+                    className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-slate-300 text-sm font-semibold mb-2">
+                    Password
+                  </label>
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Create a password"
+                    className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-slate-300 text-sm font-semibold mb-2">
+                    Confirm Password
+                  </label>
+                  <input
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Confirm your password"
+                    className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                  />
+                </div>
+              </div>
+
+              <Button
+                onClick={async () => {
+                  if (!username || !email || !password || !confirmPassword) {
+                    setError('Please fill in all fields');
+                    return;
+                  }
+                  if (!email.includes('@')) {
+                    setError('Please enter a valid email address');
+                    return;
+                  }
+                  if (password !== confirmPassword) {
+                    setError('Passwords do not match');
+                    return;
+                  }
+                  if (password.length < 6) {
+                    setError('Password must be at least 6 characters long');
+                    return;
+                  }
+                  
+                  try {
+                    const response = await fetch('/api/auth/signup', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ username, email, password })
+                    });
+
+                    const data = await response.json();
+
+                    if (response.ok) {
+                      localStorage.setItem('authToken', data.token);
+                      setAuthToken(data.token);
+                      setUserData(data.user);
+                      setIsLoggedIn(true);
+                      setCurrentPage('home');
+                      setError(null);
+                      setUsername('');
+                      setEmail('');
+                      setPassword('');
+                      setConfirmPassword('');
+                    } else {
+                      setError(data.error || 'Signup failed');
+                    }
+                  } catch (error) {
+                    setError('Failed to connect to server');
+                  }
+                }}
+                className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-semibold py-3 rounded-xl transition-all duration-300 shadow-lg mb-4"
+              >
+                Sign Up
+              </Button>
+
+              <div className="text-center">
+                <p className="text-slate-400 text-sm">
+                  Already have an account?{' '}
+                  <button
+                    onClick={() => {
+                      setCurrentPage('login');
+                      setError(null);
+                    }}
+                    className="text-cyan-400 hover:text-cyan-300 font-semibold transition-colors"
+                  >
+                    Sign In
+                  </button>
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Account Page */}
+        {currentPage === 'account' && userData && (
+          <div className="max-w-4xl mx-auto px-6 py-12">
+            {/* Account Info Section */}
+            <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-3xl p-8 border border-slate-700/50 shadow-2xl mb-8">
+              <div className="flex justify-between items-start mb-6">
+                <div>
+                  <h1 className="text-3xl font-bold text-white mb-2">
+                    My <span className="bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">Account</span>
+                  </h1>
+                  <p className="text-slate-300">Manage your account and view your history</p>
+                </div>
+                {!isEditingAccount ? (
+                  <Button
+                    onClick={() => {
+                      setIsEditingAccount(true);
+                      setEditUsername(userData.username);
+                      setEditEmail(userData.email);
+                    }}
+                    className="bg-slate-700 hover:bg-slate-600 text-white"
+                  >
+                    Modify
+                  </Button>
+                ) : (
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={async () => {
+                        try {
+                          const response = await fetch('/api/user/account', {
+                            method: 'PUT',
+                            headers: {
+                              'Content-Type': 'application/json',
+                              'Authorization': `Bearer ${authToken}`
+                            },
+                            body: JSON.stringify({
+                              username: editUsername,
+                              email: editEmail
+                            })
+                          });
+
+                          const data = await response.json();
+
+                          if (response.ok) {
+                            setUserData({ ...userData, username: editUsername, email: editEmail });
+                            setIsEditingAccount(false);
+                            setError(null);
+                          } else {
+                            setError(data.error || 'Failed to update account');
+                          }
+                        } catch (error) {
+                          setError('Failed to connect to server');
+                        }
+                      }}
+                      className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white"
+                    >
+                      Save
+                    </Button>
+                    <Button
+                      onClick={() => setIsEditingAccount(false)}
+                      className="bg-slate-700 hover:bg-slate-600 text-white"
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                )}
+              </div>
+
+              {error && (
+                <div className="mb-4 p-3 bg-red-500/20 border border-red-500/50 rounded-lg text-red-300 text-sm">
+                  {error}
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div>
+                  <label className="block text-slate-400 text-sm font-semibold mb-2">
+                    Username
+                  </label>
+                  {isEditingAccount ? (
+                    <input
+                      type="text"
+                      value={editUsername}
+                      onChange={(e) => setEditUsername(e.target.value)}
+                      className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                    />
+                  ) : (
+                    <p className="text-white text-lg">{userData.username}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-slate-400 text-sm font-semibold mb-2">
+                    Email
+                  </label>
+                  {isEditingAccount ? (
+                    <input
+                      type="email"
+                      value={editEmail}
+                      onChange={(e) => setEditEmail(e.target.value)}
+                      className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                    />
+                  ) : (
+                    <p className="text-white text-lg">{userData.email}</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="bg-slate-700/30 rounded-xl p-6 border border-slate-600/50">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-slate-400 text-sm font-semibold mb-1">Credits Remaining</p>
+                    <p className="text-4xl font-bold text-cyan-400">{userData.credits}</p>
+                  </div>
+                  <Button
+                    onClick={() => setCurrentPage('pricing')}
+                    className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white"
+                  >
+                    Buy Credits
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            {/* Generated Images Section */}
+            <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-3xl p-8 border border-slate-700/50 shadow-2xl">
+              <h2 className="text-2xl font-bold text-white mb-6">
+                Your Generated <span className="bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">Images</span>
+              </h2>
+              
+              {userImages.length === 0 ? (
+                <div className="text-center py-12">
+                  <ImageIcon className="w-16 h-16 text-slate-600 mx-auto mb-4" />
+                  <p className="text-slate-400">No images generated yet</p>
+                  <Button
+                    onClick={() => setCurrentPage('home')}
+                    className="mt-4 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white"
+                  >
+                    Create Your First Image
+                  </Button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {userImages.map((image, index) => (
+                    <div key={index} className="bg-slate-700/30 rounded-xl overflow-hidden border border-slate-600/50 hover:border-cyan-500/50 transition-colors">
+                      <div className="aspect-square relative">
+                        <img
+                          src={image.image}
+                          alt={`Generated ${index + 1}`}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <div className="p-2 flex items-center justify-between">
+                        <p className="text-slate-400 text-sm">
+                          {new Date(image.createdAt).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric'
+                          })}
+                        </p>
+                        <button
+                          onClick={async () => {
+                            const response = await fetch(image.image);
+                            const blob = await response.blob();
+                            const url = window.URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = `ai-enhanced-${Date.now()}.png`;
+                            document.body.appendChild(a);
+                            a.click();
+                            window.URL.revokeObjectURL(url);
+                            document.body.removeChild(a);
+                          }}
+                          className="hover:opacity-70 transition-opacity"
+                        >
+                          <Download className="w-5 h-5 text-blue-500" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         )}
