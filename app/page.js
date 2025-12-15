@@ -287,6 +287,16 @@ export default function Home() {
       name: 'Instagram',
       logo: 'https://upload.wikimedia.org/wikipedia/commons/9/95/Instagram_logo_2022.svg',
       color: 'from-pink-500 to-purple-600'
+    },
+    {
+      name: 'Twitter',
+      logo: 'https://upload.wikimedia.org/wikipedia/commons/6/6f/Logo_of_Twitter.svg',
+      color: 'from-blue-400 to-blue-600'
+    },
+    {
+      name: 'TikTok',
+      logo: 'https://upload.wikimedia.org/wikipedia/en/a/a9/TikTok_logo.svg',
+      color: 'from-slate-800 to-pink-500'
     }
   ];
 
@@ -318,8 +328,8 @@ export default function Home() {
           let width = img.width;
           let height = img.height;
           
-          // Calculate new dimensions - very aggressive resize
-          const maxDimension = 1024;
+          // Calculate new dimensions - minimal resize for maximum quality
+          const maxDimension = 4096;
           if (width > maxDimension || height > maxDimension) {
             if (width > height) {
               height = (height / width) * maxDimension;
@@ -336,8 +346,8 @@ export default function Home() {
           const ctx = canvas.getContext('2d');
           ctx.drawImage(img, 0, 0, width, height);
           
-          // Start with quality 0.7 and reduce if needed
-          let quality = 0.7;
+          // Start with quality 0.95 for near-original quality
+          let quality = 0.95;
           const compress = () => {
             canvas.toBlob((blob) => {
               const sizeMB = blob.size / (1024 * 1024);
@@ -416,9 +426,7 @@ export default function Home() {
   const handleFileChange = async (e) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Compress image if it's too large
-      const compressedFile = await compressImage(file);
-      setSelectedFile(compressedFile);
+      setSelectedFile(file);
       setGeneratedImageUrl(null);
       setWatermarkedPreview(null);
       setShowDownload(false);
@@ -426,7 +434,7 @@ export default function Home() {
       reader.onloadend = () => {
         setImagePreview(reader.result);
       };
-      reader.readAsDataURL(compressedFile);
+      reader.readAsDataURL(file);
     }
   };
 
@@ -445,14 +453,12 @@ export default function Home() {
     setIsDragging(false);
     const file = e.dataTransfer.files?.[0];
     if (file && file.type.startsWith('image/')) {
-      // Compress image if it's too large
-      const compressedFile = await compressImage(file);
-      setSelectedFile(compressedFile);
+      setSelectedFile(file);
       const reader = new FileReader();
       reader.onloadend = () => {
         setImagePreview(reader.result);
       };
-      reader.readAsDataURL(compressedFile);
+      reader.readAsDataURL(file);
     }
   };
 
@@ -1129,9 +1135,6 @@ export default function Home() {
                       <h3 className="text-lg font-semibold text-white mb-1">
                         {selectedFile?.name}
                       </h3>
-                      <p className="text-slate-400 mb-4 text-sm">
-                        {(selectedFile?.size / 1024 / 1024).toFixed(2)} MB
-                      </p>
                       {error && (
                         <div className="mb-4 p-3 bg-red-500/20 border border-red-500/50 rounded-lg text-red-300 text-sm">
                           {error}
@@ -1644,9 +1647,9 @@ export default function Home() {
                 {/* Card 1 - Small (h-72) */}
                 <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl overflow-hidden border border-slate-700/50 hover:border-cyan-500/50 transition-colors duration-300 flex flex-col h-72">
                   <div className="h-40 bg-gradient-to-br from-cyan-500 to-blue-600 relative overflow-hidden flex-shrink-0">
-                    <img src="https://randomuser.me/api/portraits/women/1.jpg" alt="Before" className="w-full h-full object-cover" />
+                    <img src="./com1.png" alt="Before" className="w-full h-full object-cover" />
                     <div className="absolute inset-0 bg-black/20 flex items-end p-4">
-                      <div><p className="text-white font-semibold">@sophiapark</p></div>
+                      <div><p className="text-white font-semibold">emma.wilson</p></div>
                     </div>
                   </div>
                   <div className="p-4 flex-grow flex flex-col justify-between">
@@ -1658,9 +1661,9 @@ export default function Home() {
                 {/* Card 2 - Large (h-96) */}
                 <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl overflow-hidden border border-slate-700/50 hover:border-cyan-500/50 transition-colors duration-300 flex flex-col h-96">
                   <div className="h-56 bg-gradient-to-br from-orange-500 to-red-600 relative overflow-hidden flex-shrink-0">
-                    <img src="https://randomuser.me/api/portraits/men/2.jpg" alt="Amazing" className="w-full h-full object-cover" />
+                    <img src="./com2.png" alt="Amazing" className="w-full h-full object-cover" />
                     <div className="absolute inset-0 bg-black/20 flex items-end p-4">
-                      <div><p className="text-white font-semibold">@mikethompson</p></div>
+                      <div><p className="text-white font-semibold">madison_taylor</p></div>
                     </div>
                   </div>
                   <div className="p-4 flex-grow flex flex-col justify-between">
@@ -1672,9 +1675,9 @@ export default function Home() {
                 {/* Card 3 - Medium (h-80) */}
                 <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl overflow-hidden border border-slate-700/50 hover:border-cyan-500/50 transition-colors duration-300 flex flex-col h-80">
                   <div className="h-48 bg-gradient-to-br from-purple-500 to-indigo-600 relative overflow-hidden flex-shrink-0">
-                    <img src="https://randomuser.me/api/portraits/women/3.jpg" alt="Success" className="w-full h-full object-cover" />
+                    <img src="./com3.png" alt="Success" className="w-full h-full object-cover" />
                     <div className="absolute inset-0 bg-black/20 flex items-end p-4">
-                      <div><p className="text-white font-semibold">@jess_rivera</p></div>
+                      <div><p className="text-white font-semibold">jake.mitchell</p></div>
                     </div>
                   </div>
                   <div className="p-4 flex-grow flex flex-col justify-between">
@@ -1686,9 +1689,9 @@ export default function Home() {
                 {/* Card 4 - Small (h-72) */}
                 <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl overflow-hidden border border-slate-700/50 hover:border-cyan-500/50 transition-colors duration-300 flex flex-col h-72">
                   <div className="h-40 bg-gradient-to-br from-emerald-500 to-teal-600 relative overflow-hidden flex-shrink-0">
-                    <img src="https://randomuser.me/api/portraits/men/4.jpg" alt="Result" className="w-full h-full object-cover" />
+                    <img src="./com4.png" alt="Result" className="w-full h-full object-cover" />
                     <div className="absolute inset-0 bg-black/20 flex items-end p-4">
-                      <div><p className="text-white font-semibold">@alexchen_22</p></div>
+                      <div><p className="text-white font-semibold">connor_reed</p></div>
                     </div>
                   </div>
                   <div className="p-4 flex-grow flex flex-col justify-between">
@@ -1703,9 +1706,9 @@ export default function Home() {
                 {/* Card 5 - Large (h-96) */}
                 <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl overflow-hidden border border-slate-700/50 hover:border-cyan-500/50 transition-colors duration-300 flex flex-col h-96">
                   <div className="h-56 bg-gradient-to-br from-pink-500 to-rose-600 relative overflow-hidden flex-shrink-0">
-                    <img src="https://randomuser.me/api/portraits/women/5.jpg" alt="Transformed" className="w-full h-full object-cover" />
+                    <img src="./com5.png" alt="Transformed" className="w-full h-full object-cover" />
                     <div className="absolute inset-0 bg-black/20 flex items-end p-4">
-                      <div><p className="text-white font-semibold">@emma.lifestyle</p></div>
+                      <div><p className="text-white font-semibold">amelie.laurent</p></div>
                     </div>
                   </div>
                   <div className="p-4 flex-grow flex flex-col justify-between">
@@ -1717,9 +1720,9 @@ export default function Home() {
                 {/* Card 6 - Small (h-72) */}
                 <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl overflow-hidden border border-slate-700/50 hover:border-cyan-500/50 transition-colors duration-300 flex flex-col h-72">
                   <div className="h-40 bg-gradient-to-br from-yellow-500 to-amber-600 relative overflow-hidden flex-shrink-0">
-                    <img src="https://randomuser.me/api/portraits/men/6.jpg" alt="Incredible" className="w-full h-full object-cover" />
+                    <img src="./com6.png" alt="Incredible" className="w-full h-full object-cover" />
                     <div className="absolute inset-0 bg-black/20 flex items-end p-4">
-                      <div><p className="text-white font-semibold">@c.phillips_</p></div>
+                      <div><p className="text-white font-semibold">sophie.clark</p></div>
                     </div>
                   </div>
                   <div className="p-4 flex-grow flex flex-col justify-between">
@@ -1731,9 +1734,9 @@ export default function Home() {
                 {/* Card 7 - Small (h-72) */}
                 <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl overflow-hidden border border-slate-700/50 hover:border-cyan-500/50 transition-colors duration-300 flex flex-col h-72">
                   <div className="h-40 bg-gradient-to-br from-red-500 to-pink-600 relative overflow-hidden flex-shrink-0">
-                    <img src="https://randomuser.me/api/portraits/women/7.jpg" alt="Stunning" className="w-full h-full object-cover" />
+                    <img src="./com7.png" alt="Stunning" className="w-full h-full object-cover" />
                     <div className="absolute inset-0 bg-black/20 flex items-end p-4">
-                      <div><p className="text-white font-semibold">@taylorr_xo</p></div>
+                      <div><p className="text-white font-semibold">ashley_moore</p></div>
                     </div>
                   </div>
                   <div className="p-4 flex-grow flex flex-col justify-between">
@@ -1745,9 +1748,9 @@ export default function Home() {
                 {/* Card 8 - Medium (h-80) */}
                 <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl overflow-hidden border border-slate-700/50 hover:border-cyan-500/50 transition-colors duration-300 flex flex-col h-80">
                   <div className="h-48 bg-gradient-to-br from-blue-500 to-cyan-600 relative overflow-hidden flex-shrink-0">
-                    <img src="https://randomuser.me/api/portraits/men/8.jpg" alt="Success" className="w-full h-full object-cover" />
+                    <img src="./com8.png" alt="Success" className="w-full h-full object-cover" />
                     <div className="absolute inset-0 bg-black/20 flex items-end p-4">
-                      <div><p className="text-white font-semibold">@j_kim94</p></div>
+                      <div><p className="text-white font-semibold">carlos.martinez</p></div>
                     </div>
                   </div>
                   <div className="p-4 flex-grow flex flex-col justify-between">
@@ -1762,9 +1765,9 @@ export default function Home() {
                 {/* Card 9 - Medium (h-80) */}
                 <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl overflow-hidden border border-slate-700/50 hover:border-cyan-500/50 transition-colors duration-300 flex flex-col h-80">
                   <div className="h-48 bg-gradient-to-br from-violet-500 to-purple-600 relative overflow-hidden flex-shrink-0">
-                    <img src="https://randomuser.me/api/portraits/men/9.jpg" alt="Stunning" className="w-full h-full object-cover" />
+                    <img src="./com9.png" alt="Stunning" className="w-full h-full object-cover" />
                     <div className="absolute inset-0 bg-black/20 flex items-end p-4">
-                      <div><p className="text-white font-semibold">@alexandertran</p></div>
+                      <div><p className="text-white font-semibold">omar.hassan</p></div>
                     </div>
                   </div>
                   <div className="p-4 flex-grow flex flex-col justify-between">
@@ -1776,9 +1779,9 @@ export default function Home() {
                 {/* Card 10 - Small (h-72) */}
                 <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl overflow-hidden border border-slate-700/50 hover:border-cyan-500/50 transition-colors duration-300 flex flex-col h-72">
                   <div className="h-40 bg-gradient-to-br from-indigo-500 to-blue-600 relative overflow-hidden flex-shrink-0">
-                    <img src="https://randomuser.me/api/portraits/women/10.jpg" alt="Result" className="w-full h-full object-cover" />
+                    <img src="./com10.png" alt="Result" className="w-full h-full object-cover" />
                     <div className="absolute inset-0 bg-black/20 flex items-end p-4">
-                      <div><p className="text-white font-semibold">@morgan.reyes</p></div>
+                      <div><p className="text-white font-semibold">marcus.johnson</p></div>
                     </div>
                   </div>
                   <div className="p-4 flex-grow flex flex-col justify-between">
@@ -1790,9 +1793,9 @@ export default function Home() {
                 {/* Card 11 - Large (h-96) */}
                 <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl overflow-hidden border border-slate-700/50 hover:border-cyan-500/50 transition-colors duration-300 flex flex-col h-96">
                   <div className="h-56 bg-gradient-to-br from-lime-500 to-green-600 relative overflow-hidden flex-shrink-0">
-                    <img src="https://randomuser.me/api/portraits/men/11.jpg" alt="Success" className="w-full h-full object-cover" />
+                    <img src="./com11.png" alt="Success" className="w-full h-full object-cover" />
                     <div className="absolute inset-0 bg-black/20 flex items-end p-4">
-                      <div><p className="text-white font-semibold">@casey_stiles</p></div>
+                      <div><p className="text-white font-semibold">mina.chen</p></div>
                     </div>
                   </div>
                   <div className="p-4 flex-grow flex flex-col justify-between">
@@ -1804,9 +1807,9 @@ export default function Home() {
                 {/* Card 12 - Small (h-72) */}
                 <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl overflow-hidden border border-slate-700/50 hover:border-cyan-500/50 transition-colors duration-300 flex flex-col h-72">
                   <div className="h-40 bg-gradient-to-br from-rose-500 to-red-600 relative overflow-hidden flex-shrink-0">
-                    <img src="https://randomuser.me/api/portraits/women/13.jpg" alt="Amazing" className="w-full h-full object-cover" />
+                    <img src="./com12.png" alt="Amazing" className="w-full h-full object-cover" />
                     <div className="absolute inset-0 bg-black/20 flex items-end p-4">
-                      <div><p className="text-white font-semibold">@riley.patel</p></div>
+                      <div><p className="text-white font-semibold">raj.sharma</p></div>
                     </div>
                   </div>
                   <div className="p-4 flex-grow flex flex-col justify-between">
