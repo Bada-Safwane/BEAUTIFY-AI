@@ -295,7 +295,7 @@ export default function Home() {
     },
     {
       name: 'TikTok',
-      logo: 'https://upload.wikimedia.org/wikipedia/en/a/a9/TikTok_logo.svg',
+      logo: 'https://upload.wikimedia.org/wikipedia/commons/a/a6/Tiktok_icon.svg',
       color: 'from-slate-800 to-pink-500'
     }
   ];
