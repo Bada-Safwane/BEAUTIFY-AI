@@ -58,6 +58,20 @@ export default function Home() {
       // Close auth popup if open
       setShowAuthPopup(false);
       
+      // Restore generated image if it exists
+      const savedImageUrl = sessionStorage.getItem('generatedImageUrl');
+      if (savedImageUrl) {
+        setGeneratedImageUrl(savedImageUrl);
+        setShowDownload(true);
+        
+        // Recreate watermarked preview
+        createWatermarkedPreview(savedImageUrl).then(watermarked => {
+          setWatermarkedPreview(watermarked);
+        });
+        
+        // Don't remove yet - might need it for download flow
+      }
+      
       // Check if there's a pending purchase (download or pricing flow)
       const hasPendingPurchase = sessionStorage.getItem('pendingPurchase');
       const storedPlan = sessionStorage.getItem('selectedPlan');
@@ -70,7 +84,7 @@ export default function Home() {
         // Proceed to checkout with selected plan
         proceedToCheckout(session.user.email);
       } else {
-        // No pending purchase, stay on home page or go to account if explicitly requested
+        // No pending purchase, stay on home page
         setCurrentPage('home');
       }
     }
@@ -80,6 +94,18 @@ export default function Home() {
   useEffect(() => {
     const token = localStorage.getItem('authToken');
     const savedPage = localStorage.getItem('currentPage');
+    
+    // Restore generated image if it exists (for non-OAuth logins)
+    const savedImageUrl = sessionStorage.getItem('generatedImageUrl');
+    if (savedImageUrl && !session?.customToken) {
+      setGeneratedImageUrl(savedImageUrl);
+      setShowDownload(true);
+      
+      // Recreate watermarked preview
+      createWatermarkedPreview(savedImageUrl).then(watermarked => {
+        setWatermarkedPreview(watermarked);
+      });
+    }
     
     if (token) {
       setAuthToken(token);
@@ -522,6 +548,9 @@ export default function Home() {
       if (data.success && data.imageUrl) {
         setGeneratedImageUrl(data.imageUrl);
         setShowDownload(true);
+        
+        // Save to sessionStorage so it persists through OAuth redirects
+        sessionStorage.setItem('generatedImageUrl', data.imageUrl);
         
         // Create watermarked preview for display
         const watermarked = await createWatermarkedPreview(data.imageUrl);
