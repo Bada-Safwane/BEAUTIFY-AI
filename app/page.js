@@ -58,15 +58,20 @@ export default function Home() {
       // Close auth popup if open
       setShowAuthPopup(false);
       
-      // If we were in payment flow, proceed to checkout
-      const pendingPayment = sessionStorage.getItem('pendingPaymentPlan');
-      if (pendingPayment) {
-        const plan = pendingPayment;
-        sessionStorage.removeItem('pendingPaymentPlan');
-        proceedToCheckout(plan, session.customToken);
+      // Check if there's a pending purchase (download or pricing flow)
+      const hasPendingPurchase = sessionStorage.getItem('pendingPurchase');
+      const storedPlan = sessionStorage.getItem('selectedPlan');
+      
+      if (hasPendingPurchase === 'true' && storedPlan) {
+        // Clean up sessionStorage
+        sessionStorage.removeItem('pendingPurchase');
+        sessionStorage.removeItem('selectedPlan');
+        
+        // Proceed to checkout with selected plan
+        proceedToCheckout(session.user.email);
       } else {
-        // Otherwise, redirect to account page
-        setCurrentPage('account');
+        // No pending purchase, stay on home page or go to account if explicitly requested
+        setCurrentPage('home');
       }
     }
   }, [session]);
