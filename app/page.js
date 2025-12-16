@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useSession, signIn } from 'next-auth/react';
+import { useSession, signIn, signOut } from 'next-auth/react';
 import { Upload, Sparkles, Image as ImageIcon, X, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -841,10 +841,13 @@ export default function Home() {
                 <button 
                   onClick={() => {
                     localStorage.removeItem('authToken');
+                    localStorage.removeItem('currentPage');
                     setAuthToken(null);
                     setUserData(null);
                     setIsLoggedIn(false);
                     setCurrentPage('home');
+                    // Sign out from NextAuth (Google OAuth)
+                    signOut({ redirect: false });
                   }} 
                   className="hover:text-cyan-400 transition-colors"
                 >
@@ -899,11 +902,14 @@ export default function Home() {
                   <button 
                     onClick={() => {
                       localStorage.removeItem('authToken');
+                      localStorage.removeItem('currentPage');
                       setAuthToken(null);
                       setUserData(null);
                       setIsLoggedIn(false);
                       setCurrentPage('home');
                       setShowMobileMenu(false);
+                      // Sign out from NextAuth (Google OAuth)
+                      signOut({ redirect: false });
                     }} 
                     className="text-left text-slate-400 hover:text-cyan-400 transition-colors py-2"
                   >
