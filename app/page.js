@@ -511,11 +511,12 @@ export default function Home() {
         body: formData,
       });
 
+      const data = await response.json();
+      
       if (!response.ok) {
-        throw new Error(`API error: ${response.statusText}`);
+        throw new Error(data.error || 'Failed to process image');
       }
 
-      const data = await response.json();
       console.log('AI Processing Result:', data);
       
       if (data.success && data.imageUrl) {
@@ -528,7 +529,16 @@ export default function Home() {
       }
     } catch (err) {
       console.error('Error during AI processing:', err);
-      setError(err.message || 'Failed to process image');
+      
+      // Show user-friendly error messages
+      let errorMsg = err.message || 'Failed to process image';
+      if (errorMsg.includes('504') || errorMsg.includes('timeout')) {
+        errorMsg = 'Processing took too long. Please try with a smaller image (under 5MB) or a simpler description.';
+      } else if (errorMsg.includes('Failed to fetch')) {
+        errorMsg = 'Network error. Please check your connection and try again.';
+      }
+      
+      setError(errorMsg);
     } finally {
       setIsLoading(false);
     }

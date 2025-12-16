@@ -1,7 +1,7 @@
 import { GoogleGenAI } from "@google/genai";
 import { uploadToS3 } from "@/app/utils/utils";
 
-export const maxDuration = 60;
+export const maxDuration = 300; // Increase to 5 minutes for image processing
 export const dynamic = 'force-dynamic';
 
 export async function POST(request) {
@@ -26,6 +26,7 @@ export async function POST(request) {
     // Determine mime type from file
     const mimeType = file.type || 'image/jpeg';
 
+    console.log('Starting AI image processing...');
     const ai = new GoogleGenAI({});
 
     const promptArray = [
@@ -38,10 +39,16 @@ export async function POST(request) {
       },
     ];
 
-    const response = await ai.models.generateContent({
-      model: "gemini-3-pro-image-preview",
-      contents: promptArray,
-    });
+    console.log('Calling Gemini API...');
+    const response = await Promise.race([
+      ai.models.generateContent({
+        model: "gemini-3-pro-image-preview",
+        contents: promptArray,
+      }),
+      new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('AI processing timeout - please try again with a smaller image or simpler prompt')), 280000) // 280 seconds
+      )
+    ]);
 
     for (const part of response.candidates[0].content.parts) {
       if (part.text) {
@@ -69,14 +76,27 @@ export async function POST(request) {
       }
     }
 
+    console.error('No valid image data in AI response');
     return Response.json(
-      { error: 'No valid response from AI' },
+      { error: 'No valid response from AI - please try again' },
       { status: 500 }
     );
   } catch (error) {
     console.error('API Error:', error);
+    
+    // Provide more specific error messages
+    let errorMessage = 'Failed to process image. Please try again.';
+    
+    if (error.message?.includes('timeout')) {
+      errorMessage = 'Processing took too long. Try using a smaller image or simpler prompt.';
+    } else if (error.message?.includes('API error')) {
+      errorMessage = 'AI service is temporarily unavailable. Please try again in a moment.';
+    } else if (error.message?.includes('quota')) {
+      errorMessage = 'Service limit reached. Please try again later.';
+    }
+    
     return Response.json(
-      { error: error.message || 'Internal server error' },
+      { error: errorMessage },
       { status: 500 }
     );
   }
