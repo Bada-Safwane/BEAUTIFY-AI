@@ -528,6 +528,7 @@ export default function Home() {
 
     // If user is not logged in, show auth popup instead of redirecting
     if (!isLoggedIn) {
+      setPendingPurchase(true); // Set flag so checkout proceeds after auth
       setShowPricingPopup(false);
       setShowAuthPopup(true);
       setAuthMode('login');
