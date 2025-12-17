@@ -75,11 +75,15 @@ export default function Home() {
       
       // Check if there's a pending purchase (user clicked download and selected a plan)
       if (hasPendingPurchase === 'true' && storedPlan) {
-        // User was in the middle of purchasing, proceed to checkout
+        // User was in the middle of purchasing, proceed to checkout with stored plan
+        setSelectedPlan(storedPlan);
+        
+        // Clean up sessionStorage
         sessionStorage.removeItem('pendingPurchase');
         sessionStorage.removeItem('selectedPlan');
         
-        proceedToCheckout(session.user.email);
+        // Proceed to checkout, passing the plan directly
+        proceedToCheckout(session.user.email, storedPlan);
       } else {
         // No pending purchase - user just signed up/logged in
         // Stay on home page with the generated image visible
@@ -114,7 +118,6 @@ export default function Home() {
         
         if (hasPendingPurchase === 'true' && storedPlan) {
           setSelectedPlan(storedPlan);
-          setPendingPurchase(true);
           
           // Clean up sessionStorage
           sessionStorage.removeItem('pendingPurchase');
@@ -127,8 +130,7 @@ export default function Home() {
           
           if (response.ok) {
             const data = await response.json();
-            setPendingPurchase(false);
-            await proceedToCheckout(data.user.email);
+            await proceedToCheckout(data.user.email, storedPlan);
           }
         }
       });
@@ -605,7 +607,7 @@ export default function Home() {
     await proceedToCheckout(userData?.email);
   };
 
-  const proceedToCheckout = async (userEmail) => {
+  const proceedToCheckout = async (userEmail, planOverride = null) => {
     try {
       const headers = {
         'Content-Type': 'application/json',
@@ -622,6 +624,14 @@ export default function Home() {
         'premium': '10-pack'
       };
 
+      // Use provided plan or fall back to state
+      const planToUse = planOverride || selectedPlan;
+      
+      if (!planToUse) {
+        setError('No plan selected');
+        return;
+      }
+
       // Determine context: if there's a generated image, it's from download flow, otherwise pricing page
       const context = generatedImageUrl ? 'download' : 'pricing';
 
@@ -629,7 +639,7 @@ export default function Home() {
         method: 'POST',
         headers,
         body: JSON.stringify({
-          plan: planMap[selectedPlan],
+          plan: planMap[planToUse],
           email: userEmail,
           imageUrl: generatedImageUrl || '',
           context: context
@@ -686,9 +696,9 @@ export default function Home() {
         }
         
         // Only proceed to checkout if there's a pending purchase
-        if (pendingPurchase) {
+        if (pendingPurchase && selectedPlan) {
           setPendingPurchase(false);
-          await proceedToCheckout(data.user.email);
+          await proceedToCheckout(data.user.email, selectedPlan);
         } else {
           // No pending purchase, stay on home page
           setCurrentPage('home');
