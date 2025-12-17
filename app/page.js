@@ -213,9 +213,12 @@ export default function Home() {
           setGeneratedImageUrl(imageToDownload);
           setShowDownload(true);
           
+          // Save back to generatedImageUrl in sessionStorage so it persists
+          sessionStorage.setItem('generatedImageUrl', imageToDownload);
+          
           // Note: Image is already saved by the webhook, no need to save again here
           
-          // Create watermarked preview
+          // Create watermarked preview - but show the actual image since it's purchased
           createWatermarkedPreview(imageToDownload).then(watermarked => {
             setWatermarkedPreview(watermarked);
           });
@@ -247,17 +250,18 @@ export default function Home() {
           }, 1000);
         }
         
-        // Clean up sessionStorage
+        // Clean up sessionStorage but keep generatedImageUrl for display
         sessionStorage.removeItem('pendingImageUrl');
         sessionStorage.removeItem('restoreAfterPayment');
         sessionStorage.removeItem('purchaseContext');
+        // Note: generatedImageUrl stays in sessionStorage for continued use
         
         // Clean up the processed flag after a delay
         setTimeout(() => {
           sessionStorage.removeItem('paymentProcessed');
         }, 5000);
         
-        // Stay on home page
+        // Stay on home page with the image preview
         setCurrentPage('home');
         
         // Clean up URL
