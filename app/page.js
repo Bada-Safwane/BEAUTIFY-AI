@@ -60,6 +60,9 @@ export default function Home() {
       
       // Restore generated image if it exists
       const savedImageUrl = sessionStorage.getItem('generatedImageUrl');
+      const hasPendingPurchase = sessionStorage.getItem('pendingPurchase');
+      const storedPlan = sessionStorage.getItem('selectedPlan');
+      
       if (savedImageUrl) {
         setGeneratedImageUrl(savedImageUrl);
         setShowDownload(true);
@@ -68,23 +71,18 @@ export default function Home() {
         createWatermarkedPreview(savedImageUrl).then(watermarked => {
           setWatermarkedPreview(watermarked);
         });
-        
-        // Don't remove yet - might need it for download flow
       }
       
-      // Check if there's a pending purchase (download or pricing flow)
-      const hasPendingPurchase = sessionStorage.getItem('pendingPurchase');
-      const storedPlan = sessionStorage.getItem('selectedPlan');
-      
+      // Check if there's a pending purchase (user clicked download and selected a plan)
       if (hasPendingPurchase === 'true' && storedPlan) {
-        // Clean up sessionStorage
+        // User was in the middle of purchasing, proceed to checkout
         sessionStorage.removeItem('pendingPurchase');
         sessionStorage.removeItem('selectedPlan');
         
-        // Proceed to checkout with selected plan
         proceedToCheckout(session.user.email);
       } else {
-        // No pending purchase, stay on home page
+        // No pending purchase - user just signed up/logged in
+        // Stay on home page with the generated image visible
         setCurrentPage('home');
       }
     }
@@ -675,10 +673,25 @@ export default function Home() {
         setUserData(data.user);
         setShowAuthPopup(false);
         
+        // Restore generated image if it exists
+        const savedImageUrl = sessionStorage.getItem('generatedImageUrl');
+        if (savedImageUrl) {
+          setGeneratedImageUrl(savedImageUrl);
+          setShowDownload(true);
+          
+          // Recreate watermarked preview
+          createWatermarkedPreview(savedImageUrl).then(watermarked => {
+            setWatermarkedPreview(watermarked);
+          });
+        }
+        
         // Only proceed to checkout if there's a pending purchase
         if (pendingPurchase) {
           setPendingPurchase(false);
           await proceedToCheckout(data.user.email);
+        } else {
+          // No pending purchase, stay on home page
+          setCurrentPage('home');
         }
       } else {
         setError('Failed to fetch account data');
